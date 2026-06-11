@@ -12,6 +12,7 @@
 .env.development              # Development secrets
 *.env                         # Any .env file
 .env*                         # Wildcard env files
+.env.example
 
 # ============================================
 # PYTHON DEPENDENCIES & VIRTUAL ENVIRONMENTS
