@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.database import Base, get_db
-from app.models.listing import MaterialType, ListingStatus
 
 
 # Setup test database
@@ -37,7 +36,7 @@ def setup_db():
     Base.metadata.drop_all(bind=engine)
 
 
-#  Material Tests 
+# ==================== Material Tests ====================
 
 def test_create_material():
     response = client.post(
@@ -71,14 +70,14 @@ def test_create_duplicate_material():
     assert response.status_code == 400
 
 
-# Listing Tests
+# ==================== Listing Tests ====================
 
 def test_create_listing():
     # Create material first
     client.post("/api/v1/listings/materials", json={"type": "plastic", "unit": "kg"})
     
     response = client.post(
-        "/api/v1/listings",
+        "/api/v1/listings/listings",
         json={
             "material_id": 1,
             "quantity": 50.0,
@@ -97,26 +96,26 @@ def test_create_listing():
 def test_get_listing():
     # Create material and listing
     client.post("/api/v1/listings/materials", json={"type": "paper", "unit": "kg"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 20.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 20.0})
     
-    response = client.get("/api/v1/listings/1")
+    response = client.get("/api/v1/listings/listings/1")
     assert response.status_code == 200
     data = response.json()
     assert data["quantity"] == 20.0
 
 
 def test_get_listing_not_found():
-    response = client.get("/api/v1/listings/999")
+    response = client.get("/api/v1/listings/listings/999")
     assert response.status_code == 404
 
 
 def test_update_listing():
     # Setup
     client.post("/api/v1/listings/materials", json={"type": "metal", "unit": "kg"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 30.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 30.0})
     
     response = client.put(
-        "/api/v1/listings/1",
+        "/api/v1/listings/listings/1",
         json={"quantity": 45.0, "condition": "updated condition"}
     )
     assert response.status_code == 200
@@ -128,13 +127,13 @@ def test_update_listing():
 def test_delete_listing():
     # Setup
     client.post("/api/v1/listings/materials", json={"type": "organic", "unit": "kg"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 10.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 10.0})
     
-    response = client.delete("/api/v1/listings/1")
+    response = client.delete("/api/v1/listings/listings/1")
     assert response.status_code == 204
     
     # Verify deleted
-    response = client.get("/api/v1/listings/1")
+    response = client.get("/api/v1/listings/listings/1")
     assert response.status_code == 404
 
 
@@ -142,10 +141,10 @@ def test_get_listings_with_filter():
     # Setup
     client.post("/api/v1/listings/materials", json={"type": "plastic", "unit": "kg"})
     client.post("/api/v1/listings/materials", json={"type": "glass", "unit": "kg"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 100.0})
-    client.post("/api/v1/listings", json={"material_id": 2, "quantity": 50.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 100.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 2, "quantity": 50.0})
     
-    response = client.get("/api/v1/listings")
+    response = client.get("/api/v1/listings/listings")
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
@@ -155,9 +154,9 @@ def test_get_listings_with_filter():
 def test_search_listings():
     # Setup
     client.post("/api/v1/listings/materials", json={"type": "e_waste", "unit": "pieces"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 5.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 5.0})
     
-    response = client.get("/api/v1/listings/search?status=active")
+    response = client.get("/api/v1/listings/listings/search?status=active")
     assert response.status_code == 200
     data = response.json()
     assert data["total"] >= 1
@@ -166,9 +165,8 @@ def test_search_listings():
 def test_get_recycler_inventory():
     # Setup
     client.post("/api/v1/listings/materials", json={"type": "plastic", "unit": "kg"})
-    client.post("/api/v1/listings", json={"material_id": 1, "quantity": 100.0})
+    client.post("/api/v1/listings/listings", json={"material_id": 1, "quantity": 100.0})
     
-    # Update status to completed (would need service call, but for now just test endpoint)
     response = client.get("/api/v1/listings/recyclers/inventory?recycler_id=1")
     assert response.status_code == 200
     data = response.json()
