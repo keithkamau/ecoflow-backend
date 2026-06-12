@@ -1,0 +1,7 @@
+README.md
+setup.py
+ecoflow_backend.egg-info/PKG-INFO
+ecoflow_backend.egg-info/SOURCES.txt
+ecoflow_backend.egg-info/dependency_links.txt
+ecoflow_backend.egg-info/requires.txt
+ecoflow_backend.egg-info/top_level.txt

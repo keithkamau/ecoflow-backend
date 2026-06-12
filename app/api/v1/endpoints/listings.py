@@ -1,160 +1,139 @@
-# app/services/listing_service.py
+# app/api/v1/endpoints/listings.py
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
-from app.models.listing import Material, Listing, ListingPhoto, MaterialType, ListingStatus
+from app.database import get_db
+from app.models.listing import ListingStatus
 from app.schemas.listing_schemas import (
     ListingCreate,
     ListingUpdate,
+    ListingResponse,
     MaterialCreate,
+    MaterialResponse,
     ListingSearchFilters,
+    ListingSearchResponse,
+    InventoryResponse,
 )
+from app.services import listing_service as service
+
+router = APIRouter()
 
 
-def create_material(db: Session, material: MaterialCreate) -> Material:
-    db_material = Material(
-        type=material.type,
-        unit=material.unit,
-        reference_price=material.reference_price,
-        description=material.description,
-    )
-    db.add(db_material)
-    db.commit()
-    db.refresh(db_material)
-    return db_material
+# ==================== Materials ====================
+
+@router.post("/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
+def create_material(material: MaterialCreate, db: Session = Depends(get_db)):
+    existing = service.get_material_by_type(db, material.type)
+    if existing:
+        raise HTTPException(status_code=400, detail="Material type already exists")
+    return service.create_material(db, material)
 
 
-def get_materials(db: Session) -> List[Material]:
-    return db.query(Material).all()
+@router.get("/materials", response_model=List[MaterialResponse])
+def get_materials(db: Session = Depends(get_db)):
+    return service.get_materials(db)
 
 
-def get_material_by_type(db: Session, material_type: str) -> Optional[Material]:
-    return db.query(Material).filter(Material.type == material_type).first()
+# ==================== Listings ====================
+
+@router.post("/listings", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
+def create_listing(listing: ListingCreate, db: Session = Depends(get_db)):
+    seller_id = 1
+    return service.create_listing(db, listing, seller_id)
 
 
-def create_listing(db: Session, listing: ListingCreate, seller_id: int) -> Listing:
-    db_listing = Listing(
-        seller_id=seller_id,
-        material_id=listing.material_id,
-        quantity=listing.quantity,
-        condition=listing.condition,
-        location_lat=listing.location_lat,
-        location_lng=listing.location_lng,
-        location_address=listing.location_address,
-        price_expectation=listing.price_expectation,
-        preferred_pickup_start=listing.preferred_pickup_start,
-        preferred_pickup_end=listing.preferred_pickup_end,
-        status=ListingStatus.ACTIVE,
-    )
-    db.add(db_listing)
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
-
-
-def get_listing(db: Session, listing_id: int) -> Optional[Listing]:
-    return db.query(Listing).filter(Listing.id == listing_id).first()
-
-
+@router.get("/listings", response_model=ListingSearchResponse)
 def get_listings(
-    db: Session,
-    filters: Optional[ListingSearchFilters] = None,
-    skip: int = 0,
-    limit: int = 100,
-) -> tuple[List[Listing], int]:
-    query = db.query(Listing)
-
-    if filters:
-        if filters.material_type:
-            material = get_material_by_type(db, filters.material_type)
-            if material:
-                query = query.filter(Listing.material_id == material.id)
-
-        if filters.min_quantity is not None:
-            query = query.filter(Listing.quantity >= filters.min_quantity)
-        if filters.max_quantity is not None:
-            query = query.filter(Listing.quantity <= filters.max_quantity)
-        if filters.status:
-            query = query.filter(Listing.status == filters.status)
-        if filters.date_from:
-            query = query.filter(Listing.created_at >= filters.date_from)
-        if filters.date_to:
-            query = query.filter(Listing.created_at <= filters.date_to)
-
-    total = query.count()
-    listings = query.offset(skip).limit(limit).all()
-    return listings, total
-
-
-def update_listing(
-    db: Session, listing_id: int, listing_update: ListingUpdate
-) -> Optional[Listing]:
-    db_listing = get_listing(db, listing_id)
-    if not db_listing:
-        return None
-
-    update_data = listing_update.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_listing, field, value)
-
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
-
-
-def delete_listing(db: Session, listing_id: int) -> bool:
-    db_listing = get_listing(db, listing_id)
-    if not db_listing:
-        return False
-
-    db.delete(db_listing)
-    db.commit()
-    return True
-
-
-def add_listing_photo(db: Session, listing_id: int, photo_url: str) -> ListingPhoto:
-    db_photo = ListingPhoto(listing_id=listing_id, photo_url=photo_url)
-    db.add(db_photo)
-    db.commit()
-    db.refresh(db_photo)
-    return db_photo
-
-
-def get_recycler_inventory(db: Session, recycler_id: int) -> List[dict]:
-    results = (
-        db.query(
-            Material.type.label("material_type"),
-            func.sum(Listing.quantity).label("total_quantity"),
-            func.count(Listing.id).label("listing_count"),
-        )
-        .join(Material, Listing.material_id == Material.id)
-        .filter(Listing.seller_id == recycler_id)
-        .filter(Listing.status == ListingStatus.COMPLETED)
-        .group_by(Material.type)
-        .all()
+    material_type: Optional[str] = Query(None),
+    min_quantity: Optional[float] = Query(None),
+    max_quantity: Optional[float] = Query(None),
+    status: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lng: Optional[float] = Query(None),
+    radius_km: Optional[float] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    filters = ListingSearchFilters(
+        material_type=material_type,
+        min_quantity=min_quantity,
+        max_quantity=max_quantity,
+        status=status,
+        lat=lat,
+        lng=lng,
+        radius_km=radius_km,
+        date_from=date_from,
+        date_to=date_to,
     )
-
-    inventory = []
-    for row in results:
-        inventory.append({
-            "material_type": row.material_type,
-            "total_quantity": float(row.total_quantity or 0),
-            "listing_count": row.listing_count,
-        })
-
-    return inventory
+    listings, total = service.get_listings(db, filters, skip, limit)
+    return {"total": total, "listings": listings}
 
 
-def update_listing_status(
-    db: Session, listing_id: int, status: str
-) -> Optional[Listing]:
-    db_listing = get_listing(db, listing_id)
-    if not db_listing:
-        return None
+@router.get("/listings/search", response_model=ListingSearchResponse)
+def search_listings(
+    material_type: Optional[str] = Query(None),
+    min_quantity: Optional[float] = Query(None),
+    max_quantity: Optional[float] = Query(None),
+    status: Optional[str] = Query(None),
+    lat: Optional[float] = Query(None),
+    lng: Optional[float] = Query(None),
+    radius_km: Optional[float] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    filters = ListingSearchFilters(
+        material_type=material_type,
+        min_quantity=min_quantity,
+        max_quantity=max_quantity,
+        status=status,
+        lat=lat,
+        lng=lng,
+        radius_km=radius_km,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    listings, total = service.get_listings(db, filters, skip, limit)
+    return {"total": total, "listings": listings}
 
-    db_listing.status = status
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
+
+@router.get("/listings/{listing_id}", response_model=ListingResponse)
+def get_listing(listing_id: int, db: Session = Depends(get_db)):
+    listing = service.get_listing(db, listing_id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return listing
+
+
+@router.put("/listings/{listing_id}", response_model=ListingResponse)
+def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depends(get_db)):
+    updated = service.update_listing(db, listing_id, listing)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return updated
+
+
+@router.delete("/listings/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_listing(listing_id: int, db: Session = Depends(get_db)):
+    deleted = service.delete_listing(db, listing_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return None
+
+
+# ==================== Recycler Inventory ====================
+
+@router.get("/recyclers/inventory", response_model=InventoryResponse)
+def get_recycler_inventory(
+    recycler_id: int = Query(..., description="Recycler user ID"),
+    db: Session = Depends(get_db),
+):
+    items = service.get_recycler_inventory(db, recycler_id)
+    return {"recycler_id": recycler_id, "items": items}

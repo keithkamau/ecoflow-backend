@@ -22,8 +22,7 @@ class MaterialResponse(MaterialBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 #  ListingPhoto Schemas 
@@ -40,8 +39,7 @@ class ListingPhotoResponse(ListingPhotoBase):
     id: int
     uploaded_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 #  Listing Schemas 
@@ -84,8 +82,7 @@ class ListingResponse(ListingBase):
     material: Optional[MaterialResponse] = None
     photos: List[ListingPhotoResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Search & Filter Schemas
