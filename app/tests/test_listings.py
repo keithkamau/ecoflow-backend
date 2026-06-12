@@ -36,7 +36,7 @@ def setup_db():
     Base.metadata.drop_all(bind=engine)
 
 
-# ==================== Material Tests ====================
+# Material Tests 
 
 def test_create_material():
     response = client.post(
@@ -70,7 +70,7 @@ def test_create_duplicate_material():
     assert response.status_code == 400
 
 
-# ==================== Listing Tests ====================
+#  Listing Tests 
 
 def test_create_listing():
     # Create material first

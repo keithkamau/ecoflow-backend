@@ -1,7 +1,10 @@
+import os
+import uuid
 # app/api/v1/endpoints/listings.py
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -21,7 +24,7 @@ from app.services import listing_service as service
 router = APIRouter()
 
 
-# ==================== Materials ====================
+#  Materials 
 
 @router.post("/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
 def create_material(material: MaterialCreate, db: Session = Depends(get_db)):
@@ -36,7 +39,7 @@ def get_materials(db: Session = Depends(get_db)):
     return service.get_materials(db)
 
 
-# ==================== Listings ====================
+# Listings 
 
 @router.post("/listings", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 def create_listing(listing: ListingCreate, db: Session = Depends(get_db)):
@@ -128,7 +131,7 @@ def delete_listing(listing_id: int, db: Session = Depends(get_db)):
     return None
 
 
-# ==================== Recycler Inventory ====================
+# Recycler Inventory 
 
 @router.get("/recyclers/inventory", response_model=InventoryResponse)
 def get_recycler_inventory(
@@ -137,3 +140,30 @@ def get_recycler_inventory(
 ):
     items = service.get_recycler_inventory(db, recycler_id)
     return {"recycler_id": recycler_id, "items": items}
+
+
+@router.post("/listings/{listing_id}/photos")
+async def upload_listing_photo(
+    listing_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    UPLOAD_DIR = "uploads"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    listing = service.get_listing(db, listing_id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    
+    file_ext = os.path.splitext(file.filename)[1]
+    file_name = f"{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, file_name)
+    
+    with open(file_path, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+    
+    photo_url = f"http://localhost:8000/uploads/{file_name}"
+    photo = service.add_listing_photo(db, listing_id, photo_url)
+    
+    return photo
