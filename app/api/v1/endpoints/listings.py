@@ -167,3 +167,27 @@ async def upload_listing_photo(
     photo = service.add_listing_photo(db, listing_id, photo_url)
     
     return photo
+
+
+@router.post("/listings/{listing_id}/accept-offer", response_model=ListingResponse)
+def accept_listing_offer(
+    listing_id: int,
+    accepted_quantity: float,
+    db: Session = Depends(get_db)
+):
+    listing = service.accept_offer(db, listing_id, accepted_quantity)
+    if not listing:
+        raise HTTPException(status_code=400, detail="Could not accept offer")
+    return listing
+
+
+@router.post("/listings/{listing_id}/accept-offer", response_model=ListingResponse)
+def accept_listing_offer(
+    listing_id: int,
+    accepted_quantity: float,
+    db: Session = Depends(get_db)
+):
+    listing = service.accept_offer(db, listing_id, accepted_quantity)
+    if not listing:
+        raise HTTPException(status_code=400, detail="Could not accept offer")
+    return listing

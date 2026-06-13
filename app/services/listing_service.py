@@ -1,5 +1,6 @@
 # app/services/listing_service.py
 from typing import List, Optional
+from math import radians, cos, sin, asin, sqrt
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -11,6 +12,17 @@ from app.schemas.listing_schemas import (
     MaterialCreate,
     ListingSearchFilters,
 )
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    """Calculate the great circle distance between two points on earth (in km)"""
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371
+    return c * r
 
 
 def create_material(db: Session, material: MaterialCreate) -> Material:
@@ -85,6 +97,18 @@ def get_listings(
 
     total = query.count()
     listings = query.offset(skip).limit(limit).all()
+
+    # Filter by radius if provided
+    if filters and filters.lat is not None and filters.lng is not None and filters.radius_km is not None:
+        filtered = []
+        for listing in listings:
+            if listing.location_lat is not None and listing.location_lng is not None:
+                distance = haversine(filters.lat, filters.lng, listing.location_lat, listing.location_lng)
+                if distance <= filters.radius_km:
+                    filtered.append(listing)
+        listings = filtered
+        total = len(listings)
+
     return listings, total
 
 
@@ -155,6 +179,31 @@ def update_listing_status(
         return None
 
     db_listing.status = status
+    db.commit()
+    db.refresh(db_listing)
+    return db_listing
+
+
+def accept_offer(
+    db: Session, listing_id: int, accepted_quantity: float
+) -> Optional[Listing]:
+    db_listing = get_listing(db, listing_id)
+    if not db_listing:
+        return None
+    
+    if db_listing.status != ListingStatus.ACTIVE:
+        return None
+    
+    if accepted_quantity > db_listing.quantity:
+        return None
+    
+    db_listing.quantity -= accepted_quantity
+    
+    if db_listing.quantity <= 0:
+        db_listing.status = ListingStatus.COMPLETED
+    else:
+        db_listing.status = ListingStatus.MATCHED
+    
     db.commit()
     db.refresh(db_listing)
     return db_listing
