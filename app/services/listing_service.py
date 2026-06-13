@@ -207,3 +207,28 @@ def accept_offer(
     db.commit()
     db.refresh(db_listing)
     return db_listing
+
+
+def accept_offer(
+    db: Session, listing_id: int, accepted_quantity: float
+) -> Optional[Listing]:
+    db_listing = get_listing(db, listing_id)
+    if not db_listing:
+        return None
+    
+    if db_listing.status != ListingStatus.ACTIVE:
+        return None
+    
+    if accepted_quantity > db_listing.quantity:
+        return None
+    
+    db_listing.quantity -= accepted_quantity
+    
+    if db_listing.quantity <= 0:
+        db_listing.status = ListingStatus.COMPLETED
+    else:
+        db_listing.status = ListingStatus.MATCHED
+    
+    db.commit()
+    db.refresh(db_listing)
+    return db_listing
