@@ -5,8 +5,10 @@ from math import radians, cos, sin, asin, sqrt
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.models.listing import Material, Listing, ListingPhoto, MaterialType, ListingStatus
+from app.models.listing import Material, Listing, ListingPhoto, Offer, MaterialType, ListingStatus
 from app.schemas.listing_schemas import (
+    OfferCreate,
+    OfferResponse,
     ListingCreate,
     ListingUpdate,
     MaterialCreate,
@@ -232,3 +234,36 @@ def accept_offer(
     db.commit()
     db.refresh(db_listing)
     return db_listing
+
+def create_offer(db: Session, listing_id: int, offer: OfferCreate) -> Offer:
+    db_offer = Offer(
+        listing_id=listing_id,
+        recycler_id=offer.recycler_id,
+        offered_price=offer.offered_price,
+        status="pending"
+    )
+    db.add(db_offer)
+    db.commit()
+    db.refresh(db_offer)
+    return db_offer
+
+
+def get_offers_for_listing(db: Session, listing_id: int) -> List[Offer]:
+    return db.query(Offer).filter(Offer.listing_id == listing_id).all()
+
+
+def accept_offer_by_id(db: Session, offer_id: int) -> Optional[Offer]:
+    db_offer = db.query(Offer).filter(Offer.id == offer_id).first()
+    if not db_offer or db_offer.status != "pending":
+        return None
+    
+    db_offer.status = "accepted"
+    
+    # Update listing status to matched
+    listing = get_listing(db, db_offer.listing_id)
+    if listing:
+        listing.status = ListingStatus.MATCHED
+    
+    db.commit()
+    db.refresh(db_offer)
+    return db_offer

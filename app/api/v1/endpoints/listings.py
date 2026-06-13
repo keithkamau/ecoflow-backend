@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.listing import ListingStatus
 from app.schemas.listing_schemas import (
+    OfferCreate,
+    OfferResponse,
     ListingCreate,
     ListingUpdate,
     ListingResponse,
@@ -215,3 +217,36 @@ def accept_listing_offer(
     if not listing:
         raise HTTPException(status_code=400, detail="Could not accept offer")
     return listing
+
+
+@router.post("/listings/{listing_id}/offers", response_model=OfferResponse)
+def create_listing_offer(
+    listing_id: int,
+    offer: OfferCreate,
+    db: Session = Depends(get_db)
+):
+    listing = service.get_listing(db, listing_id)
+    if not listing or listing.status != "active":
+        raise HTTPException(status_code=400, detail="Listing not available for offers")
+    
+    db_offer = service.create_offer(db, listing_id, offer)
+    return db_offer
+
+
+@router.get("/listings/{listing_id}/offers", response_model=List[OfferResponse])
+def get_listing_offers(
+    listing_id: int,
+    db: Session = Depends(get_db)
+):
+    return service.get_offers_for_listing(db, listing_id)
+
+
+@router.post("/offers/{offer_id}/accept", response_model=OfferResponse)
+def accept_offer(
+    offer_id: int,
+    db: Session = Depends(get_db)
+):
+    offer = service.accept_offer_by_id(db, offer_id)
+    if not offer:
+        raise HTTPException(status_code=400, detail="Could not accept offer")
+    return offer

@@ -116,3 +116,17 @@ class InventoryItem(BaseModel):
 class InventoryResponse(BaseModel):
     recycler_id: int
     items: List[InventoryItem]
+class OfferCreate(BaseModel):
+    recycler_id: int
+    offered_price: Optional[float] = None
+
+class OfferResponse(BaseModel):
+    id: int
+    listing_id: int
+    recycler_id: int
+    offered_price: Optional[float]
+    status: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
