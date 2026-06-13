@@ -6,13 +6,13 @@ from app.models.user import User, OTPLog
 from app.schemas.user_schemas import RegisterRequest
 from app.utils.security import (
     hash_password,
-    verify_password,
     generate_otp,
     hash_otp,
     create_access_token,
     create_refresh_token,
     verify_token,
 )
+
 
 def register_user(db: Session, data: RegisterRequest) -> User:
     existing = db.query(User).filter(User.phone == data.phone).first()
@@ -36,8 +36,13 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     db.refresh(user)
     return user
 
+
 def send_otp(db: Session, phone: str) -> str:
     otp = generate_otp()
+
+    import os
+    if os.getenv("ENVIRONMENT", "development") == "development":
+        print(f"\n[DEV OTP] Phone: {phone} | OTP: {otp}\n")
 
     otp_log = OTPLog(
         phone=phone,
@@ -48,6 +53,7 @@ def send_otp(db: Session, phone: str) -> str:
     db.commit()
 
     return otp
+
 
 def verify_otp(db: Session, phone: str, otp: str) -> dict:
     otp_logs = (
@@ -80,7 +86,7 @@ def verify_otp(db: Session, phone: str, otp: str) -> dict:
                 user.verified = True
                 db.commit()
 
-            access_token = create_access_token({"sub": str(user.id), "role": user.role.value})
+            access_token = create_access_token({"sub": str(user.id), "role": user.role})
             refresh_token = create_refresh_token({"sub": str(user.id)})
             return {
                 "access_token": access_token,
@@ -91,6 +97,7 @@ def verify_otp(db: Session, phone: str, otp: str) -> dict:
     db.commit()
     raise ValueError("Invalid OTP")
 
+
 def refresh_access_token(db: Session, token: str) -> dict:
     payload = verify_token(token)
     user_id = payload["sub"]
@@ -99,8 +106,9 @@ def refresh_access_token(db: Session, token: str) -> dict:
     if not user:
         raise ValueError("User not found")
 
-    access_token = create_access_token({"sub": str(user.id), "role": user.role.value})
+    access_token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 def authenticate_with_otp(db: Session, phone: str) -> str:
     user = db.query(User).filter(User.phone == phone).first()
