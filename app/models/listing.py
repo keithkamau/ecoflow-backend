@@ -1,21 +1,82 @@
-"""Listing model — owned by Member 2. Stub with fields required by Member 4 analytics."""
-import uuid
+import enum
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Text
 
-from app.database import Base, GUID
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Enum
+from sqlalchemy.orm import relationship
+
+from app.database import Base
+
+
+class MaterialType(str, enum.Enum):
+    PLASTIC = "plastic"
+    METAL = "metal"
+    GLASS = "glass"
+    E_WASTE = "e_waste"
+    PAPER = "paper"
+    ORGANIC = "organic"
+    MIXED = "mixed"
+
+
+class ListingStatus(str, enum.Enum):
+    ACTIVE = "active"
+    MATCHED = "matched"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+
+
+class Material(Base):
+    __tablename__ = "materials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(Enum(MaterialType), unique=True, nullable=False)
+    unit = Column(String(20), default="kg")
+    reference_price = Column(Float, nullable=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    listings = relationship("Listing", back_populates="material")
 
 
 class Listing(Base):
     __tablename__ = "listings"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    seller_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
-    title = Column(String(255), nullable=False, default="")
-    description = Column(Text, nullable=True)
-    material_type = Column(String(50), nullable=False, default="other")
-    weight = Column(Float, nullable=False, default=0.0)
-    price_per_kg = Column(Float, nullable=False, default=0.0)
-    status = Column(String(20), nullable=False, default="active")
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    seller_id = Column(Integer, index=True, nullable=False)
+    material_id = Column(Integer, ForeignKey("materials.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    condition = Column(Text, nullable=True)
+    location_lat = Column(Float, nullable=True)
+    location_lng = Column(Float, nullable=True)
+    location_address = Column(String(255), nullable=True)
+    price_expectation = Column(Float, nullable=True)
+    preferred_pickup_start = Column(DateTime, nullable=True)
+    preferred_pickup_end = Column(DateTime, nullable=True)
+    status = Column(Enum(ListingStatus), default=ListingStatus.ACTIVE)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    material = relationship("Material", back_populates="listings")
+    photos = relationship("ListingPhoto", back_populates="listing", cascade="all, delete-orphan")
+
+
+class ListingPhoto(Base):
+    __tablename__ = "listing_photos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id"), nullable=False)
+    photo_url = Column(String(500), nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    listing = relationship("Listing", back_populates="photos")
+
+
+class Offer(Base):
+    __tablename__ = "offers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id"))
+    recycler_id = Column(Integer, nullable=False)
+    offered_price = Column(Float, nullable=True)
+    status = Column(String, default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

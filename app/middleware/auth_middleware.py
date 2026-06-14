@@ -1,42 +1,34 @@
-import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError
+from sqlalchemy.orm import Session
 
-from app.utils.security import decode_token
+from app.database import get_db
+from app.models.user import User
+from app.utils.security import verify_token
 
 security = HTTPBearer()
 
 
-class CurrentUser:
-    def __init__(self, user_id: uuid.UUID, email: str, role: str):
-        self.user_id = user_id
-        self.email = email
-        self.role = role
-
-
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> CurrentUser:
+    db: Session = Depends(get_db),
+) -> User:
     try:
-        payload = decode_token(credentials.credentials)
-        user_id = payload.get("sub")
-        email = payload.get("email", "")
-        role = payload.get("role", "seller")
-        if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return CurrentUser(user_id=uuid.UUID(str(user_id)), email=email, role=role)
-    except (JWTError, ValueError):
+        payload = verify_token(credentials.credentials)
+    except ValueError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user = db.query(User).filter(User.id == payload["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    return user
 
 
 def require_role(*roles: str):
-    """Dependency factory that enforces one of the given roles."""
-    def checker(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    async def guard(current_user: User = Depends(get_current_user)):
         if current_user.role not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access requires role: {', '.join(roles)}",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return current_user
-    return checker
+
+    return guard

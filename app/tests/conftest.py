@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app
-from app.config import settings
+from app.utils.security import create_access_token
 
 SQLITE_URL = "sqlite:///./test_waste.db"
 engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
@@ -41,8 +41,7 @@ def client(db):
 
 
 def _make_token(user_id: str, role: str) -> str:
-    from app.utils.security import create_access_token
-    return create_access_token({"sub": user_id, "email": f"{role}@test.com", "role": role})
+    return create_access_token({"sub": user_id, "role": role})
 
 
 @pytest.fixture()

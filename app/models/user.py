@@ -1,7 +1,8 @@
-"""User model — owned by Member 1. Stub with fields required by Member 4 foreign keys."""
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Boolean, Float, DateTime
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.database import Base, GUID
 
@@ -9,17 +10,39 @@ from app.database import Base, GUID
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    hashed_password = Column(String(255), nullable=False, default="")
-    full_name = Column(String(100), nullable=True)
-    phone = Column(String(20), nullable=True)
-    role = Column(String(20), nullable=False, default="seller")  # seller | recycler | admin
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
-    # Location fields used by Member 4's nearby-query endpoint
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
-    address = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    phone      = Column(String, unique=True, nullable=False, index=True)
+    email      = Column(String, unique=True, nullable=True)
+    name       = Column(String, nullable=False)
+    password   = Column(String, nullable=False)
+    role       = Column(Enum("seller", "recycler", "admin", name="user_role"), nullable=False)
+    verified   = Column(Boolean, default=False)
+    kyc_status = Column(Enum("none", "pending", "verified", "rejected", name="kyc_status"), default="none")
+    location   = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    kyc_documents = relationship("KYCDocument", back_populates="user", cascade="all, delete-orphan")
+
+
+class OTPLog(Base):
+    __tablename__ = "otp_logs"
+
+    id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    phone      = Column(String, nullable=False, index=True)
+    otp        = Column(String, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used       = Column(Boolean, default=False)
+    attempts   = Column(Integer, default=0)
+
+
+class KYCDocument(Base):
+    __tablename__ = "kyc_documents"
+
+    id          = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    doc_type    = Column(String, nullable=False)
+    doc_url     = Column(String, nullable=False)
+    status      = Column(Enum("pending", "verified", "rejected", name="doc_status"), default="pending")
+    uploaded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="kyc_documents")

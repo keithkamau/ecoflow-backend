@@ -4,6 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    APP_NAME: str = "Waste Management & Recycling Hub API"
+    DEBUG: bool = False
+    ALLOWED_ORIGINS: str = "*"
+
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/waste_management"
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     ALGORITHM: str = "HS256"

@@ -17,13 +17,13 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  backend:
     build: .
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/waste_management
-      SECRET_KEY: change-me-in-production
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
     depends_on:

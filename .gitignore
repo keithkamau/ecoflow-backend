@@ -1,232 +1,67 @@
-# Backend .gitignore — Waste Management & Recycling Hub
-# Comprehensive security-focused gitignore for FastAPI backend
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
 
-# ============================================
-# ENVIRONMENT & SECRETS
-# ============================================
-.env                          # Main environment file with secrets
-.env.local                     # Local overrides
-.env.*.local                   # Environment-specific local files
-.env.production               # Production secrets (NEVER commit)
-.env.staging                  # Staging secrets (NEVER commit)
-.env.development              # Development secrets
-*.env                         # Any .env file
-.env*                         # Wildcard env files
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+
+# Uploads
+uploads/
+# Virtual environment
+venv/
+env/
+.venv/
 .env.example
 
-# ============================================
-# PYTHON DEPENDENCIES & VIRTUAL ENVIRONMENTS
-# ============================================
-venv/                         # Virtual environment directory
-env/                          # Alternative venv name
-ENV/                          # Windows venv
-.venv                         # Hidden venv
-.virtualenv                   # Alternative virtual env
-*.egg-info/                   # Egg info from setuptools
-dist/                         # Distribution builds
-build/                        # Build directory
-*.egg                         # Egg files
-*.whl                         # Wheel files
-pip-log.txt                   # Pip logs
-pip-delete-this-directory.txt # Pip cleanup marker
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
 
-# ============================================
-# PYTHON BYTECODE & CACHES
-# ============================================
-__pycache__/                  # Python bytecode cache
-*.py[cod]                     # Python compiled files
-*$py.class                    # Python class files
-*.so                          # C extensions
-*.pyc                         # Python bytecode
-*.pyo                         # Python optimized bytecode
+# Environment variables
+.env
 
-# ============================================
-# IDE & EDITOR FILES
-# ============================================
-.vscode/                      # VSCode settings
-.idea/                        # JetBrains IDE settings
-*.swp                         # Vim swap files
-*.swo                         # Vim backup files
-*~                            # Backup files
-.DS_Store                     # macOS metadata
-Thumbs.db                     # Windows thumbnails
-*.sublime-project             # Sublime project files
-*.sublime-workspace           # Sublime workspace files
-.emacs.desktop                # Emacs desktop files
-.project                      # Eclipse project
-.pydevproject                 # PyDev project
-.settings/                    # IDE settings
+# Testing
+.pytest_cache/
+test.db
+.coverage
+htmlcov/
 
-# ============================================
-# TEST & COVERAGE
-# ============================================
-.pytest_cache/                # Pytest cache
-.coverage                     # Coverage report
-htmlcov/                      # Coverage HTML report
-.tox/                         # Tox environments
-.hypothesis/                  # Hypothesis test data
-.mypy_cache/                  # Mypy cache
-.dmypy.json                   # Mypy daemon
-dmypy.json                    # Mypy daemon
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# ============================================
-# DATABASE & DATA FILES
-# ============================================
-*.db                          # SQLite database (dev only)
-*.sqlite                      # SQLite database
-*.sqlite3                     # SQLite3 database
-instance/                     # Flask instance folder
-*.dump                        # Database dumps
-*.sql                         # SQL files with data (except schema)
-db.sqlite3                    # Django SQLite
+# OS
+.DS_Store
+Thumbs.db
 
-# ============================================
-# LOGS & TEMP FILES
-# ============================================
-logs/                         # Log directory
-*.log                         # Log files
-*.log.*                       # Rotated log files
-**/logs/                      # Nested logs
-tmp/                          # Temporary files
-temp/                         # Temporary directory
-*.tmp                         # Temporary files
-*.temp                        # Temporary files
+# pytest
+.pytest_cache/
+# Uploads (KYC documents)
+uploads/
 
-# ============================================
-# OS-SPECIFIC FILES
-# ============================================
-.DS_Store                     # macOS
-.AppleDouble                  # macOS
-.LSOverride                   # macOS
-._*                           # macOS resource forks
-.Spotlight-V100               # macOS spotlight
-.Trashes                      # macOS
-ehthumbs.db                   # Windows
-$RECYCLE.BIN/                 # Windows recycle bin
-.directory                    # Linux file manager
-
-# ============================================
-# DOCKER
-# ============================================
-docker-compose.override.yml   # Local docker overrides
-.dockerignore                 # Already have this, but be explicit
-
-# ============================================
-# CREDENTIALS & KEYS
-# ============================================
-*.pem                         # Private keys
-*.key                         # Key files
-*.pub                         # Public keys
-private_key*                  # Private key files
-secret*                       # Secret files
-credentials.json              # Google credentials
-credentials.yaml              # Credentials file
-secrets.json                  # Secrets file
-*.jks                         # Java keystore
-*.p12                         # PKCS12 certificate
-*.pfx                         # Personal Information Exchange
-
-# ============================================
-# AWS & CLOUD
-# ============================================
-.aws/                         # AWS credentials directory
-aws_credentials               # AWS credentials file
-credentials                   # Generic credentials
-config                        # Config files with secrets
-~/.ssh/                       # SSH keys
-.gcp/                         # GCP credentials
-.azure/                       # Azure credentials
-
-# ============================================
-# SECURITY & BACKUPS
-# ============================================
-backup/                       # Backup directory
-backups/                      # Backups
-*.backup                      # Backup files
-*.bak                         # Backup files
-*.orig                        # Original files
-
-# ============================================
-# NODE/NPM (if using for frontend in same repo)
-# ============================================
-node_modules/                 # Node modules
-npm-debug.log*                # NPM debug logs
-yarn-error.log*               # Yarn error logs
-package-lock.json             # Optional (track or ignore based on team)
-
-# ============================================
-# MIGRATIONS (local development only)
-# ============================================
-# migrations/versions/*.py    # Uncomment if you want to version control migrations
-# Keep migrations/ dir but ignore certain patterns
-
-# ============================================
-# POETRY (if using Poetry instead of pip)
-# ============================================
-poetry.lock                   # Lock file (optional, depends on team decision)
-
-# ============================================
-# PIPENV (if using Pipenv)
-# ============================================
-Pipfile.lock                  # Lock file (optional)
-
-# ============================================
-# JUPYTER NOTEBOOKS (if using for exploration)
-# ============================================
-.ipynb_checkpoints/           # Jupyter checkpoints
-*.ipynb                       # Jupyter notebooks
-
-# ============================================
-# SYSTEM TEMP
-# ============================================
-*.pid                         # Process ID files
-/tmp                          # Temp directory
-/var                          # Variable directory
-
-# ============================================
-# BUILD ARTIFACTS
-# ============================================
-*.tar.gz                      # Compressed archives
-*.zip                         # ZIP archives
-*.rar                         # RAR archives
-
-# ============================================
-# SPECIFIC TO ALEMBIC (Database Migrations)
-# ============================================
-# migrations/versions/*.py    # Optionally ignore if not versioning migrations
-# alembic.ini                 # If secrets in config (gittrack instead)
-
-# ============================================
-# FASTAPI SPECIFIC
-# ============================================
-.starlette_sessions/          # Starlette session files
-__pycache__/                  # Already covered, but be explicit
-
-# ============================================
-# REDIS PERSISTENCE (local dev)
-# ============================================
-dump.rdb                      # Redis dump file
-appendonly.aof                # Redis AOF file
-
-# ============================================
-# COMMON PROJECT-SPECIFIC FILES
-# ============================================
-# Add project-specific patterns below:
-
-# Waste Management specific
-uploads/                      # Temporary file uploads
-temp_uploads/                 # Temporary uploads
-media/                        # Media files (if storing locally)
-static/                       # Static files (if storing locally)
-*.mp4                         # Video files
-*.mov                         # Video files
-*.avi                         # Video files
-*.png                         # Images (optional, depends on storage)
-*.jpg                         # Images
-*.jpeg                        # Images
-*.gif                         # Images
-
-# API keys test files
-*_test_keys.txt               # Test API keys
-test_secrets.py               # Test with secrets
-dev_credentials.txt           # Dev credentials
+# OS
+.DS_Store
+Thumbs.db
