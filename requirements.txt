@@ -1,3 +1,40 @@
+# Core Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary>=2.9.10
+alembic==1.14.0
+
+# Data Validation & Serialization
+pydantic==2.9.2
+pydantic-settings==2.6.1
+email-validator==2.2.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.17
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# HTTP Client (for external APIs like M-Pesa)
+httpx==0.27.2
+
+# File Upload / Storage
+boto3==1.35.63
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+httpx==0.27.2
+
+# Development
+black==24.10.0
+flake8==7.1.1
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 sqlalchemy==2.0.35

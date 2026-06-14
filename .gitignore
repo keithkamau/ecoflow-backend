@@ -1,3 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+
+# Uploads
+uploads/
 # Virtual environment
 venv/
 env/
@@ -28,6 +53,12 @@ htmlcov/
 *.swp
 *.swo
 
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest
+.pytest_cache/
 # Uploads (KYC documents)
 uploads/
 
