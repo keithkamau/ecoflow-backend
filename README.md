@@ -1,194 +1,98 @@
 # Waste Management & Recycling Hub — Backend API
 
-FastAPI-based REST API for waste management platform.
+FastAPI backend connecting waste sellers with recyclers across Kenya. Part of the EcoFlow platform.
 
 ## Features
-
-- User authentication with JWT & OTP
-- Waste listings & inventory management
-- Offer negotiation system
-- Payment processing (M-Pesa & Card)
-- Pickup coordination
-- Environmental impact tracking
-- Real-time messaging
-- Analytics & reporting
+- Offer management (create, accept, reject, counter with price/quantity)
+- Transaction lifecycle (7-state machine with enforced transitions)
+- Real M-Pesa Daraja integration (STK Push, B2C, callbacks)
+- Card payment fallback (Pesapal) — optional, requires API keys
+- Configurable platform commission (5-10% via `COMMISSION_RATE`)
+- Seller/recycler messaging with read tracking
+- WebSocket real-time notifications
+- Unread message count endpoint
 
 ## Tech Stack
+- FastAPI + Python
+- SQLAlchemy ORM + SQLite (dev) / PostgreSQL (prod)
+- JWT auth (utility ready)
+- Docker
 
-- **Framework:** FastAPI
-- **Database:** PostgreSQL
-- **ORM:** SQLAlchemy
-- **Authentication:** JWT
-- **Payment:** M-Pesa Daraja
-- **Storage:** AWS S3
-- **Containerization:** Docker
+## Getting Started
 
-## Prerequisites
-
-- Python 3.9+
-- PostgreSQL 12+
-- Docker & Docker Compose
-
-## Installation
-
-### Local Setup
-
-1. **Clone repository**
-
+### Local
 ```bash
-   git clone https://github.com/yourusername/waste-management-backend.git
-   cd waste-management-backend
+git clone https://github.com/keithkamau/ecoflow-proj-backend
+cd ecoflow-proj-backend
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-2. **Create virtual environment**
-
+### Docker
 ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+docker compose up -d
 ```
 
-3. **Install dependencies**
+API at http://localhost:8000  
+Swagger docs at http://localhost:8000/docs
 
+## Running Tests
 ```bash
-   pip install -r requirements.txt
+pytest tests/ -v --cov=app
 ```
 
-4. **Configure environment**
+## API Endpoints
 
-```bash
-   cp .env.example .env
-   # Edit .env with your values
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | / | Root health check |
+| GET | /health | Health check |
+| **Offers** | | |
+| POST | /api/v1/offers/ | Create offer |
+| GET | /api/v1/offers/ | List offers |
+| GET | /api/v1/offers/{id} | Get single offer |
+| PUT | /api/v1/offers/{id} | Accept/reject an offer |
+| POST | /api/v1/offers/{id}/counter | Counter an offer with new price |
+| DELETE | /api/v1/offers/{id} | Delete pending offer |
+| **Transactions** | | |
+| POST | /api/v1/transactions/ | Create transaction from accepted offer |
+| GET | /api/v1/transactions/ | List transactions |
+| GET | /api/v1/transactions/{id} | Get transaction details |
+| PUT | /api/v1/transactions/{id} | Update transaction status |
+| **Payments** | | |
+| POST | /api/v1/payments/ | Initiate payment (M-Pesa STK Push) |
+| POST | /api/v1/payments/callback | M-Pesa Daraja callback |
+| POST | /api/v1/payments/{id}/confirm | Manually confirm payment (dev) |
+| POST | /api/v1/payments/{id}/fail | Manually fail payment (dev) |
+| GET | /api/v1/payments/{transaction_id} | Get payment by transaction |
+| GET | /api/v1/payments/ | List all payments |
+| GET | /api/v1/payments/detail/{id} | Get payment by ID |
+| GET | /api/v1/payments/{id}/status | Query M-Pesa status |
+| **Messages** | | |
+| POST | /api/v1/messages/ | Send a message |
+| GET | /api/v1/messages/{offer_id} | Get conversation |
+| GET | /api/v1/messages/unread/count | Get unread message count |
+| PUT | /api/v1/messages/{id}/read | Mark message as read |
+| **WebSocket** | | |
+| WS | /ws/notifications | Real-time notifications |
+
+## Transaction States
+```
+offer_accepted → pickup_scheduled → pickup_completed → payment_pending → completed
+      ↓                 ↓                  ↓                  ↓
+   cancelled        cancelled          cancelled          disputed → completed
 ```
 
-5. **Run migrations**
-
-```bash
-   alembic upgrade head
+## Configuration (.env)
+```
+MPESA_CONSUMER_KEY=...
+MPESA_CONSUMER_SECRET=...
+MPESA_PASSKEY=...
+MPESA_SHORTCODE=174379
+MPESA_ENVIRONMENT=sandbox
+COMMISSION_RATE=0.05
 ```
 
-6. **Start server**
-
-```bash
-   uvicorn app.main:app --reload
-```
-
-API will be at `http://localhost:8000`
-
-### Docker Setup
-
-```bash
-docker-compose up -d
-```
-
-## API Documentation
-
-Once running, visit:
-
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-
-## Project Structure
-
-app/
-├── models/          # Database models
-├── schemas/         # Pydantic schemas
-├── api/
-│   └── v1/
-│       └── endpoints/  # API routes
-├── services/        # Business logic
-├── utils/          # Helper functions
-└── middleware/     # Custom middleware
-
-## Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
-
-# Run specific test
-pytest tests/test_auth.py::test_register_user -v
-```
-
-**Current Coverage:** 10%+ (Target: Production 80%+)
-
-## Contributing
-
-1. Create feature branch: `git checkout -b feature/description`
-2. Make changes with descriptive commits
-3. Push: `git push origin feature/description`
-4. Create Pull Request
-5. Await code review & approval
-
-## Releases
-
-Releases follow semantic versioning: `v1.0.0`
-
-- Push release tag: `git tag -a v1.0.0 -m "Release version 1.0.0"`
-- Push tags: `git push origin --tags`
-- DockerHub image: `yourusername/waste-backend:v1.0.0`
-
-## Deployment
-
-### Production Deployment
-
-1. **Build Docker image**
-
-```bash
-   docker build -t yourusername/waste-backend:v1.0.0 .
-```
-
-2. **Push to DockerHub**
-
-```bash
-   docker push yourusername/waste-backend:v1.0.0
-```
-
-3. **Deploy on AWS EC2**
-
-```bash
-   # SSH into server
-   ssh ubuntu@your-server-ip
-   
-   # Pull image & run
-   docker pull yourusername/waste-backend:v1.0.0
-   docker run -d --name waste-backend \
-     -e DATABASE_URL=postgresql://... \
-     -p 8000:8000 \
-     yourusername/waste-backend:v1.0.0
-```
-
-## Environment Variables
-
-See `.env.example` for complete list. Key variables:
-
-- `DATABASE_URL` — PostgreSQL connection string
-- `SECRET_KEY` — JWT secret (change in production)
-- `MPESA_CONSUMER_KEY` — M-Pesa API key
-- `AWS_ACCESS_KEY_ID` — AWS S3 credentials
-- `GOOGLE_MAPS_API_KEY` — Geolocation API
-
-## Troubleshooting
-
-**Port 8000 already in use:**
-
-```bash
-lsof -i :8000
-kill -9 <PID>
-```
-
-**Database connection error:**
-
-- Check PostgreSQL is running
-- Verify `DATABASE_URL` in `.env`
-- Run migrations: `alembic upgrade head`
-
-## Support & Issues
-
-Open issues on GitHub: [Issues](https://github.com/yourusername/waste-management-backend/issues)
-
-## License
-
-MIT License
+## Branch
+`feature/offers-transactions`
