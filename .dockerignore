@@ -1,0 +1,9 @@
+venv/
+.git/
+__pycache__/
+*.pyc
+.env
+waste_hub.db
+test.db
+.pytest_cache/
+README.md
