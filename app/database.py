@@ -1,42 +1,26 @@
-import uuid as uuid_lib
-from sqlalchemy import create_engine, String
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.types import TypeDecorator
+# database.py
+# This is where we set up our connection to the database
+# and create the tools we need to talk to it throughout the app
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
-
-class GUID(TypeDecorator):
-    impl = String
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == "postgresql":
-            from sqlalchemy.dialects.postgresql import UUID
-            return dialect.type_descriptor(UUID(as_uuid=True))
-        return dialect.type_descriptor(String(36))
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        return str(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        if isinstance(value, uuid_lib.UUID):
-            return value
-        return uuid_lib.UUID(str(value))
-
-
-class Base(DeclarativeBase):
-    pass
-
-
+# connect to the database using the URL we defined in config
+#SQLite for now while we'ew developing, POstgreSQL when we deploy
 engine = create_engine(settings.DATABASE_URL)
+
+# This is what we'll use to open and close database sessions 
+# Keeping autocommit off so we control when changes actually save
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# All our models will inherit from this
+# SQLAlchemy uses it to know which classes map to database tables 
+Base = declarative_base()
 
+# A simple function thta opens a db session for a request
+# and makes sure ut gets closed properly when we're done
 def get_db():
     db = SessionLocal()
     try:
