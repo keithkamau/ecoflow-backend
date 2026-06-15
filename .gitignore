@@ -7,3 +7,11 @@ __pycache__/
 .venv/
 venv/
 .coverage
+htmlcov/
+.vscode/
+.idea/
+*.swp
+*.swo
+uploads/
+.DS_Store
+Thumbs.db
