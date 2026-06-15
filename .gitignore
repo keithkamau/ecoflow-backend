@@ -1,8 +1,8 @@
 venv/
 env/
-.env
-.env.example
 .venv/
+.env
+.env.*
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,7 +10,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.env
 .pytest_cache/
 test.db
 .coverage
