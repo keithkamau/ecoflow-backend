@@ -1,3 +1,4 @@
+from app.models.listing import Listing, Material, ListingPhoto
 # __init__.py
 # import all models here so SQLAlchemy can find them
 # when we call Base.metadata.create_all() in main.py
