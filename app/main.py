@@ -1,47 +1,38 @@
-# main.py
-# Entry point for the FastAPI app
-# this is where everything comes together
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.database import Base, engine
-from app.models import Offer, Transaction, Payment, Message
-from app.routers import offers, transactions, payments, messages, notifications
+from app.database import engine, Base
+from app.api.v1.api import api_router
 
-# create all database tables if they don't exist yet
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Waste Management & Recycling Hub",
-    description="A platform connecting waste sellers with recyclers across Kenya",
-    version="1.0.0"
+    title="EcoFlow API",
+    version="1.0.0",
+    description="Waste management and recycling marketplace API",
 )
 
-# allow the React frontend to talk to this API during development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-    ],
+    allow_origins=["http://localhost:5173", "https://ecoflow-frontend.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# register all routers
-app.include_router(offers.router)
-app.include_router(transactions.router)
-app.include_router(payments.router)
-app.include_router(messages.router)
-app.include_router(notifications.router)
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# basic health check so we can confirm the server is running
+app.include_router(api_router, prefix="/api/v1")
+
+
 @app.get("/")
 def root():
-    return {"message": "Waste Hub API is running"}
+    return {"message": "EcoFlow API is running"}
+
 
 @app.get("/health")
 def health_check():
