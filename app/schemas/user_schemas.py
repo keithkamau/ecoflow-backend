@@ -27,7 +27,7 @@ class DocStatus(str, Enum):
 
 class RegisterRequest(BaseModel):
     phone: str = Field(min_length=10, max_length=15, pattern=r"^\+?\d+$")
-    email: Optional[str]
+    email: Optional[str] = None
     name: str = Field(min_length=2, max_length=100)
     password: str = Field(min_length=6)
     role: UserRole
@@ -35,6 +35,7 @@ class RegisterRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     email: str
+    password: str
 
 
 class TokenResponse(BaseModel):
