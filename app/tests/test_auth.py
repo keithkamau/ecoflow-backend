@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
-from app.main import app
+from main import app
 from app.models.user import User, OTPLog
 from app.utils.security import hash_password, hash_otp, create_access_token
 
