@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-
 from app.api.v1.endpoints import (
     listings,
     offers,
@@ -8,10 +7,13 @@ from app.api.v1.endpoints import (
     pickups,
     analytics,
     locations,
+    auth,
+    users,
 )
 
 api_router = APIRouter()
-
+api_router.include_router(auth.router)
+api_router.include_router(users.router)
 api_router.include_router(listings.router, prefix="/listings")
 api_router.include_router(offers.router)
 api_router.include_router(payments.router)
