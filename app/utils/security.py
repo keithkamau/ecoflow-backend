@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-import jwt
+from jose import jwt
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change_this_in_production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")

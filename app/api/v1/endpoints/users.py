@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, s
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.utils.security import get_current_user, require_role
+from app.middleware.auth_middleware import get_current_user, require_role
 from app.models.user import User, KYCDocument
 from app.schemas.user_schemas import UserResponse, UserUpdateRequest, KYCDocumentResponse
 
