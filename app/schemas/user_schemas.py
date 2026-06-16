@@ -3,7 +3,7 @@ from uuid import UUID
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class UserRole(str, Enum):
@@ -27,15 +27,14 @@ class DocStatus(str, Enum):
 
 class RegisterRequest(BaseModel):
     phone: str = Field(min_length=10, max_length=15, pattern=r"^\+?\d+$")
-    email: EmailStr
+    email: Optional[str]
     name: str = Field(min_length=2, max_length=100)
     password: str = Field(min_length=6)
     role: UserRole
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=6)
+    email: str
 
 
 class TokenResponse(BaseModel):
@@ -64,7 +63,7 @@ class UserResponse(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     location: Optional[str] = None
 
 
