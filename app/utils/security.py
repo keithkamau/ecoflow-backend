@@ -39,11 +39,3 @@ def verify_token(token: str) -> dict:
         raise ValueError("Token has expired")
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
-
-
-def generate_otp() -> str:
-    return f"{random.randint(0, 999999):06d}"
-
-
-def hash_otp(otp: str) -> str:
-    return hashlib.sha256(otp.encode("utf-8")).hexdigest()

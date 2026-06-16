@@ -37,14 +37,9 @@ class RegisterRequest(BaseModel):
     role: UserRole
 
 
-class SendOTPRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=15, pattern=r"^\+?\d+$")
-
-
-class VerifyOTPRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=15, pattern=r"^\+?\d+$")
-    otp: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
-
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
 
 class TokenResponse(BaseModel):
     access_token: str

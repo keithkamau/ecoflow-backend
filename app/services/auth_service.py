@@ -37,77 +37,24 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     return user
 
 
-def send_otp(db: Session, phone: str) -> dict:
-    otp = generate_otp()
-
-    import os
-    is_dev = os.getenv("ENVIRONMENT", "development") == "development"
-    if is_dev:
-        print(f"\n[DEV OTP] Phone: {phone} | OTP: {otp}\n")
-
-    otp_log = OTPLog(
-        phone=phone,
-        otp=hash_otp(otp),
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
-    )
-    db.add(otp_log)
-    db.commit()
-
-    result = {"message": "OTP sent", "phone": phone}
-    if is_dev:
-        result["otp"] = otp
-    return result
-
-
-def authenticate_with_otp(db: Session, phone: str) -> dict:
-    user = db.query(User).filter(User.phone == phone).first()
+def login_user(db: Session, email: str, password: str) -> dict:
+    user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise ValueError("No account found with this phone number")
+        raise ValueError("Invalid email or password")
 
-    return send_otp(db, phone)
+    if not verify_password(password, user.password):
+        raise ValueError("Invalid email or password")
 
+    if not user.verified:
+        raise ValueError("Account not verified")
 
-def verify_otp(db: Session, phone: str, otp: str) -> dict:
-    otp_logs = (
-        db.query(OTPLog)
-        .filter(
-            OTPLog.phone == phone,
-            OTPLog.used == False,
-            OTPLog.expires_at > datetime.now(timezone.utc),
-        )
-        .order_by(OTPLog.id.desc())
-        .all()
-    )
-
-    if not otp_logs:
-        raise ValueError("No valid OTP found. Request a new one.")
-
-    for log in otp_logs:
-        log.attempts += 1
-        if log.attempts > 3:
-            log.used = True
-            db.commit()
-            raise ValueError("Too many attempts. Request a new OTP.")
-
-        if log.otp == hash_otp(otp):
-            log.used = True
-            db.commit()
-
-            user = db.query(User).filter(User.phone == phone).first()
-            if user:
-                user.verified = True
-                db.commit()
-
-            access_token = create_access_token({"sub": str(user.id), "role": user.role})
-            refresh_token = create_refresh_token({"sub": str(user.id)})
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-            }
-
-    db.commit()
-    raise ValueError("Invalid OTP")
+    access_token = create_access_token({"sub": str(user.id), "role": user.role})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 def refresh_access_token(db: Session, token: str) -> dict:
