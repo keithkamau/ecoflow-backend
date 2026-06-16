@@ -1,8 +1,3 @@
-# auth.py
-# JWT token utilities — generation and verification
-# not fully wired up yet since auth belongs to Member 1
-# but the helpers are ready for when we integrate
-
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from app.config import settings

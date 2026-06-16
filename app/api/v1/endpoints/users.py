@@ -40,7 +40,7 @@ def upload_kyc(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # MVP: store file path locally. S3 upload is a stretch goal.
+
     import shutil
     import os
 

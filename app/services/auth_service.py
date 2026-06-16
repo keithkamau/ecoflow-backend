@@ -37,11 +37,12 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     return user
 
 
-def send_otp(db: Session, phone: str) -> str:
+def send_otp(db: Session, phone: str) -> dict:
     otp = generate_otp()
 
     import os
-    if os.getenv("ENVIRONMENT", "development") == "development":
+    is_dev = os.getenv("ENVIRONMENT", "development") == "development"
+    if is_dev:
         print(f"\n[DEV OTP] Phone: {phone} | OTP: {otp}\n")
 
     otp_log = OTPLog(
@@ -52,7 +53,18 @@ def send_otp(db: Session, phone: str) -> str:
     db.add(otp_log)
     db.commit()
 
-    return otp
+    result = {"message": "OTP sent", "phone": phone}
+    if is_dev:
+        result["otp"] = otp
+    return result
+
+
+def authenticate_with_otp(db: Session, phone: str) -> dict:
+    user = db.query(User).filter(User.phone == phone).first()
+    if not user:
+        raise ValueError("No account found with this phone number")
+
+    return send_otp(db, phone)
 
 
 def verify_otp(db: Session, phone: str, otp: str) -> dict:

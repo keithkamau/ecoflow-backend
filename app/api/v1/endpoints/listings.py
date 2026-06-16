@@ -1,6 +1,6 @@
 import os
 import uuid
-# app/api/v1/endpoints/listings.py
+
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
