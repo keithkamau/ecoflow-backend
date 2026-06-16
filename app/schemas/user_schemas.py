@@ -6,8 +6,6 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
-# ── Enums ──
-
 class UserRole(str, Enum):
     seller = "seller"
     recycler = "recycler"
@@ -27,11 +25,9 @@ class DocStatus(str, Enum):
     rejected = "rejected"
 
 
-# ── Auth ──
-
 class RegisterRequest(BaseModel):
     phone: str = Field(min_length=10, max_length=15, pattern=r"^\+?\d+$")
-    email: Optional[EmailStr] = None
+    email: EmailStr
     name: str = Field(min_length=2, max_length=100)
     password: str = Field(min_length=6)
     role: UserRole
@@ -40,6 +36,7 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
+
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -50,8 +47,6 @@ class TokenResponse(BaseModel):
 class RefreshTokenRequest(BaseModel):
     token: str
 
-
-# ── User ──
 
 class UserResponse(BaseModel):
     id: UUID
@@ -72,8 +67,6 @@ class UserUpdateRequest(BaseModel):
     email: Optional[EmailStr] = None
     location: Optional[str] = None
 
-
-# ── KYC ──
 
 class KYCDocumentResponse(BaseModel):
     id: UUID
