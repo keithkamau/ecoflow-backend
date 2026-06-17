@@ -69,12 +69,3 @@ class ListingPhoto(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
     listing = relationship("Listing", back_populates="photos")
-class Offer(Base):
-    __tablename__ = "offers"
-    id = Column(Integer, primary_key=True, index=True)
-    listing_id = Column(Integer, ForeignKey("listings.id"))
-    recycler_id = Column(Integer, nullable=False)
-    offered_price = Column(Float, nullable=True)
-    status = Column(String, default="pending")  # pending, accepted, rejected
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

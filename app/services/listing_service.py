@@ -5,7 +5,8 @@ from math import radians, cos, sin, asin, sqrt
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.models.listing import Material, Listing, ListingPhoto, Offer, MaterialType, ListingStatus
+from app.models.listing import Material, Listing, ListingPhoto, MaterialType, ListingStatus
+from app.models.offer import Offer
 from app.schemas.listing_schemas import (
     OfferCreate,
     OfferResponse,
@@ -185,62 +186,14 @@ def update_listing_status(
     db.refresh(db_listing)
     return db_listing
 
-
-def accept_offer(
-    db: Session, listing_id: int, accepted_quantity: float
-) -> Optional[Listing]:
-    db_listing = get_listing(db, listing_id)
-    if not db_listing:
-        return None
-    
-    if db_listing.status != ListingStatus.ACTIVE:
-        return None
-    
-    if accepted_quantity > db_listing.quantity:
-        return None
-    
-    db_listing.quantity -= accepted_quantity
-    
-    if db_listing.quantity <= 0:
-        db_listing.status = ListingStatus.COMPLETED
-    else:
-        db_listing.status = ListingStatus.MATCHED
-    
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
-
-
-def accept_offer(
-    db: Session, listing_id: int, accepted_quantity: float
-) -> Optional[Listing]:
-    db_listing = get_listing(db, listing_id)
-    if not db_listing:
-        return None
-    
-    if db_listing.status != ListingStatus.ACTIVE:
-        return None
-    
-    if accepted_quantity > db_listing.quantity:
-        return None
-    
-    db_listing.quantity -= accepted_quantity
-    
-    if db_listing.quantity <= 0:
-        db_listing.status = ListingStatus.COMPLETED
-    else:
-        db_listing.status = ListingStatus.MATCHED
-    
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
-
 def create_offer(db: Session, listing_id: int, offer: OfferCreate) -> Offer:
+    from app.models.offer import OfferStatus
     db_offer = Offer(
         listing_id=listing_id,
         recycler_id=offer.recycler_id,
         offered_price=offer.offered_price,
-        status="pending"
+        quantity=0,
+        status=OfferStatus.PENDING,
     )
     db.add(db_offer)
     db.commit()
@@ -253,17 +206,17 @@ def get_offers_for_listing(db: Session, listing_id: int) -> List[Offer]:
 
 
 def accept_offer_by_id(db: Session, offer_id: int) -> Optional[Offer]:
+    from app.models.offer import OfferStatus
     db_offer = db.query(Offer).filter(Offer.id == offer_id).first()
-    if not db_offer or db_offer.status != "pending":
+    if not db_offer or db_offer.status != OfferStatus.PENDING:
         return None
-    
-    db_offer.status = "accepted"
-    
-    # Update listing status to matched
+
+    db_offer.status = OfferStatus.ACCEPTED
+
     listing = get_listing(db, db_offer.listing_id)
     if listing:
         listing.status = ListingStatus.MATCHED
-    
+
     db.commit()
     db.refresh(db_offer)
     return db_offer

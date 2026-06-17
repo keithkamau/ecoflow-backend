@@ -6,7 +6,7 @@ from app.database import get_db
 from app.schemas.message import MessageCreate, MessageResponse
 from app.services.message_service import send_message, get_messages_by_offer, mark_message_as_read, get_unread_count
 
-router = APIRouter(prefix="/api/v1/messages", tags=["messages"])
+router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 @router.post("/", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)

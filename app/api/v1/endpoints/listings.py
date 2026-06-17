@@ -10,8 +10,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.listing import ListingStatus
 from app.schemas.listing_schemas import (
-    OfferCreate,
-    OfferResponse,
     ListingCreate,
     ListingUpdate,
     ListingResponse,
@@ -167,12 +165,3 @@ async def upload_listing_photo(
     
     photo_url = f"http://localhost:8000/uploads/{file_name}"
     photo = service.add_listing_photo(db, listing_id, photo_url)
-@router.post("/offers/{offer_id}/accept", response_model=OfferResponse)
-def accept_offer(
-    offer_id: int,
-    db: Session = Depends(get_db)
-):
-    offer = service.accept_offer_by_id(db, offer_id)
-    if not offer:
-        raise HTTPException(status_code=400, detail="Could not accept offer")
-    return offer

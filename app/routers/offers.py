@@ -13,7 +13,7 @@ from app.services.offer_service import (
     delete_offer,
 )
 
-router = APIRouter(prefix="/api/v1/offers", tags=["offers"])
+router = APIRouter(prefix="/offers", tags=["offers"])
 
 
 @router.post("/", response_model=OfferResponse, status_code=status.HTTP_201_CREATED)

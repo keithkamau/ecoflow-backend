@@ -14,7 +14,7 @@ from app.services.payment_service import (
     query_payment_status,
 )
 
-router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
+router = APIRouter(prefix="/payments", tags=["payments"])
 
 
 @router.post("/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)

@@ -12,7 +12,7 @@ from app.services.transaction_service import (
 )
 from app.models.transaction import TransactionStatus
 
-router = APIRouter(prefix="/api/v1/transactions", tags=["transactions"])
+router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
 @router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
