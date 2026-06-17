@@ -41,13 +41,13 @@ def get_materials(db: Session = Depends(get_db)):
 
 # Listings 
 
-@router.post("/listings", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 def create_listing(listing: ListingCreate, db: Session = Depends(get_db)):
     seller_id = 1
     return service.create_listing(db, listing, seller_id)
 
 
-@router.get("/listings", response_model=ListingSearchResponse)
+@router.get("/", response_model=ListingSearchResponse)
 def get_listings(
     material_type: Optional[str] = Query(None),
     min_quantity: Optional[float] = Query(None),
@@ -77,7 +77,7 @@ def get_listings(
     return {"total": total, "listings": listings}
 
 
-@router.get("/listings/search", response_model=ListingSearchResponse)
+@router.get("/search", response_model=ListingSearchResponse)
 def search_listings(
     material_type: Optional[str] = Query(None),
     min_quantity: Optional[float] = Query(None),
@@ -107,7 +107,7 @@ def search_listings(
     return {"total": total, "listings": listings}
 
 
-@router.get("/listings/{listing_id}", response_model=ListingResponse)
+@router.get("/{listing_id}", response_model=ListingResponse)
 def get_listing(listing_id: int, db: Session = Depends(get_db)):
     listing = service.get_listing(db, listing_id)
     if not listing:
@@ -115,7 +115,7 @@ def get_listing(listing_id: int, db: Session = Depends(get_db)):
     return listing
 
 
-@router.put("/listings/{listing_id}", response_model=ListingResponse)
+@router.put("/{listing_id}", response_model=ListingResponse)
 def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depends(get_db)):
     updated = service.update_listing(db, listing_id, listing)
     if not updated:
@@ -123,7 +123,7 @@ def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depend
     return updated
 
 
-@router.delete("/listings/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_listing(listing_id: int, db: Session = Depends(get_db)):
     deleted = service.delete_listing(db, listing_id)
     if not deleted:
@@ -142,7 +142,7 @@ def get_recycler_inventory(
     return {"recycler_id": recycler_id, "items": items}
 
 
-@router.post("/listings/{listing_id}/photos")
+@router.post("/{listing_id}/photos")
 async def upload_listing_photo(
     listing_id: int,
     file: UploadFile = File(...),
