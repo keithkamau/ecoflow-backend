@@ -70,12 +70,16 @@ def assign_driver(db: Session, pickup_id: int, driver_id: int) -> Optional[Picku
     return pickup
 
 
-def upload_proof(db: Session, pickup_id: int, proof_url: str) -> Optional[Pickup]:
+def upload_proof(db: Session, pickup_id: int, proof_url: str, weight: Optional[float] = None, signature: Optional[str] = None) -> Optional[Pickup]:
     pickup = get_pickup(db, pickup_id)
     if not pickup:
         return None
 
     pickup.proof_url = proof_url
+    if weight is not None:
+        pickup.weight = weight
+    if signature is not None:
+        pickup.signature = signature
     pickup.status = PickupStatus.COMPLETED
     pickup.actual_time = datetime.utcnow()
 
