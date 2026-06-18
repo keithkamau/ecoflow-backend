@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.models.transaction import Transaction, TransactionStatus
 from app.models.offer import Offer, OfferStatus
+from app.models.listing import Listing, ListingStatus
 from app.services.notification_service import create_notification
 
 
@@ -107,11 +108,35 @@ def update_transaction_status(
         transaction.pickup_scheduled_at = datetime.now(timezone.utc)
         if pickup_notes:
             transaction.pickup_notes = pickup_notes
+        listing = db.query(Listing).filter(Listing.id == transaction.listing_id).first()
+        if listing:
+            listing.status = ListingStatus.AWAITING_PICKUP
 
     if status == TransactionStatus.DISPUTED:
         transaction.disputed_at = datetime.now(timezone.utc)
         if dispute_reason:
             transaction.dispute_reason = dispute_reason
+
+    if status == TransactionStatus.PICKUP_COMPLETED:
+        listing = db.query(Listing).filter(Listing.id == transaction.listing_id).first()
+        if listing:
+            listing.status = ListingStatus.PICKUP_COMPLETE
+        create_notification(
+            db, user_id=str(transaction.seller_id),
+            title="Successful Delivery",
+            message=f"Recycler has collected the waste for transaction #{transaction_id}. Delivery complete!",
+            type="delivery",
+            reference_type="transaction",
+            reference_id=transaction_id,
+        )
+        create_notification(
+            db, user_id=str(transaction.recycler_id),
+            title="Pickup Complete",
+            message=f"You confirmed collection for transaction #{transaction_id}.",
+            type="delivery",
+            reference_type="transaction",
+            reference_id=transaction_id,
+        )
 
     if status == TransactionStatus.COMPLETED:
         transaction.completed_at = datetime.now(timezone.utc)

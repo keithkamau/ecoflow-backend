@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.models.offer import Offer, OfferStatus
-from app.models.listing import Listing
+from app.models.listing import Listing, ListingStatus
 from app.services.notification_service import create_notification
 
 
@@ -53,11 +53,26 @@ def update_offer_status(db: Session, offer_id: int, status: OfferStatus, note: s
     offer = get_offer_by_id(db, offer_id)
     if not offer:
         return None
+    if offer.status == status:
+        return offer
     if offer.status in [OfferStatus.ACCEPTED, OfferStatus.REJECTED, OfferStatus.EXPIRED]:
         return None
     offer.status = status
     if note:
         offer.note = note
+
+    if status == OfferStatus.ACCEPTED and offer.listing_id:
+        other = db.query(Offer).filter(
+            Offer.listing_id == offer.listing_id,
+            Offer.id != offer_id,
+            Offer.status == OfferStatus.PENDING,
+        ).all()
+        for o in other:
+            o.status = OfferStatus.REJECTED
+        listing = db.query(Listing).filter(Listing.id == offer.listing_id).first()
+        if listing:
+            listing.status = ListingStatus.OFFER_ACCEPTED
+
     try:
         db.commit()
     except Exception:
@@ -77,6 +92,15 @@ def update_offer_status(db: Session, offer_id: int, status: OfferStatus, note: s
                 reference_type="offer",
                 reference_id=offer_id,
             )
+            if status == OfferStatus.ACCEPTED:
+                create_notification(
+                    db, user_id=str(offer.recycler_id),
+                    title="Offer Accepted",
+                    message=f"Your offer #{offer_id} for {listing.material.type} was accepted!",
+                    type="offer",
+                    reference_type="offer",
+                    reference_id=offer_id,
+                )
     return offer
 
 
