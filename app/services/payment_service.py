@@ -19,7 +19,7 @@ def get_payment_by_id(db: Session, payment_id: int):
     return db.query(Payment).filter(Payment.id == payment_id).first()
 
 
-def initiate_payment(db: Session, transaction_id: int, user_id: int, amount: float, payment_method: PaymentMethod, phone_number: str = None):
+def initiate_payment(db: Session, transaction_id: int, user_id: str, amount: float, payment_method: PaymentMethod, phone_number: str = None):
     transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
     if not transaction:
         return None
@@ -64,7 +64,11 @@ def initiate_payment(db: Session, transaction_id: int, user_id: int, amount: flo
                 commission_amount=commission_amount,
             )
         db.add(payment)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
         db.refresh(payment)
         return payment
 
@@ -74,16 +78,18 @@ def initiate_payment(db: Session, transaction_id: int, user_id: int, amount: flo
         user_id=user_id,
         amount=amount,
         payment_method=payment_method,
-        status=PaymentStatus.SUCCESS,
+        status=PaymentStatus.PENDING,
         reference=mock_reference,
         phone_number=phone_number,
         commission_rate=commission_rate,
         commission_amount=commission_amount,
     )
     db.add(payment)
-    transaction.status = TransactionStatus.COMPLETED
-    transaction.completed_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(payment)
     return payment
 
@@ -104,7 +110,11 @@ def complete_payment(db: Session, checkout_request_id: str, mpesa_receipt: str, 
         transaction.status = TransactionStatus.COMPLETED
         transaction.completed_at = datetime.now(timezone.utc)
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(payment)
     return payment
 
@@ -120,7 +130,11 @@ def confirm_payment_by_id(db: Session, payment_id: int, mpesa_receipt: str):
     if transaction:
         transaction.status = TransactionStatus.COMPLETED
         transaction.completed_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(payment)
     return payment
 
@@ -131,7 +145,11 @@ def fail_payment(db: Session, checkout_request_id: str, result_desc: str = None)
         return None
 
     payment.status = PaymentStatus.FAILED
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(payment)
     return payment
 

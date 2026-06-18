@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from app.models.offer import Offer, OfferStatus
 
 
-def get_all_offers(db: Session, listing_id: int = None, recycler_id: int = None):
+def get_all_offers(db: Session, listing_id: int = None, recycler_id: str = None):
     query = db.query(Offer)
     if listing_id:
         query = query.filter(Offer.listing_id == listing_id)
@@ -16,16 +16,21 @@ def get_offer_by_id(db: Session, offer_id: int):
     return db.query(Offer).filter(Offer.id == offer_id).first()
 
 
-def create_offer(db: Session, listing_id: int, recycler_id: int, offered_price: float, quantity: float, note: str = None):
+def create_offer(db: Session, listing_id: int = None, recycler_id: str = "", offered_price: float = 0, quantity: float = 0, note: str = None, material_id: int = None):
     offer = Offer(
         listing_id=listing_id,
         recycler_id=recycler_id,
         offered_price=offered_price,
         quantity=quantity,
         note=note,
+        material_id=material_id,
     )
     db.add(offer)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(offer)
     return offer
 
@@ -39,7 +44,11 @@ def update_offer_status(db: Session, offer_id: int, status: OfferStatus, note: s
     offer.status = status
     if note:
         offer.note = note
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(offer)
     return offer
 
@@ -55,7 +64,11 @@ def counter_offer(db: Session, offer_id: int, counter_price: float, counter_quan
     offer.counter_quantity = counter_quantity or offer.quantity
     offer.counter_note = counter_note
     offer.countered_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(offer)
     return offer
 
@@ -67,7 +80,11 @@ def delete_offer(db: Session, offer_id: int):
     if offer.status != OfferStatus.PENDING:
         return None
     db.delete(offer)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return True
 
 

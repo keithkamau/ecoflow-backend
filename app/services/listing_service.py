@@ -3,13 +3,8 @@ from typing import List, Optional
 from math import radians, cos, sin, asin, sqrt
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-
 from app.models.listing import Material, Listing, ListingPhoto, MaterialType, ListingStatus
-from app.models.offer import Offer
 from app.schemas.listing_schemas import (
-    OfferCreate,
-    OfferResponse,
     ListingCreate,
     ListingUpdate,
     MaterialCreate,
@@ -36,7 +31,11 @@ def create_material(db: Session, material: MaterialCreate) -> Material:
         description=material.description,
     )
     db.add(db_material)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_material)
     return db_material
 
@@ -49,7 +48,7 @@ def get_material_by_type(db: Session, material_type: str) -> Optional[Material]:
     return db.query(Material).filter(Material.type == material_type).first()
 
 
-def create_listing(db: Session, listing: ListingCreate, seller_id: int) -> Listing:
+def create_listing(db: Session, listing: ListingCreate, seller_id: str) -> Listing:
     db_listing = Listing(
         seller_id=seller_id,
         material_id=listing.material_id,
@@ -64,7 +63,11 @@ def create_listing(db: Session, listing: ListingCreate, seller_id: int) -> Listi
         status=ListingStatus.ACTIVE,
     )
     db.add(db_listing)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_listing)
     return db_listing
 
@@ -87,10 +90,8 @@ def get_listings(
             if material:
                 query = query.filter(Listing.material_id == material.id)
 
-        if filters.min_quantity is not None:
-            query = query.filter(Listing.quantity >= filters.min_quantity)
-        if filters.max_quantity is not None:
-            query = query.filter(Listing.quantity <= filters.max_quantity)
+        if filters.quantity is not None:
+            query = query.filter(Listing.quantity >= filters.quantity)
         if filters.status:
             query = query.filter(Listing.status == filters.status)
         if filters.date_from:
@@ -100,17 +101,6 @@ def get_listings(
 
     total = query.count()
     listings = query.offset(skip).limit(limit).all()
-
-    # Filter by radius if provided
-    if filters and filters.lat is not None and filters.lng is not None and filters.radius_km is not None:
-        filtered = []
-        for listing in listings:
-            if listing.location_lat is not None and listing.location_lng is not None:
-                distance = haversine(filters.lat, filters.lng, listing.location_lat, listing.location_lng)
-                if distance <= filters.radius_km:
-                    filtered.append(listing)
-        listings = filtered
-        total = len(listings)
 
     return listings, total
 
@@ -126,7 +116,11 @@ def update_listing(
     for field, value in update_data.items():
         setattr(db_listing, field, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_listing)
     return db_listing
 
@@ -137,38 +131,46 @@ def delete_listing(db: Session, listing_id: int) -> bool:
         return False
 
     db.delete(db_listing)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return True
 
 
 def add_listing_photo(db: Session, listing_id: int, photo_url: str) -> ListingPhoto:
     db_photo = ListingPhoto(listing_id=listing_id, photo_url=photo_url)
     db.add(db_photo)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_photo)
     return db_photo
 
 
-def get_recycler_inventory(db: Session, recycler_id: int) -> List[dict]:
+def get_recycler_inventory(db: Session, recycler_id: str) -> List[dict]:
+    from app.models.transaction import Transaction
     results = (
         db.query(
+            Transaction.id.label("transaction_id"),
             Material.type.label("material_type"),
-            func.sum(Listing.quantity).label("total_quantity"),
-            func.count(Listing.id).label("listing_count"),
+            Transaction.final_quantity,
         )
+        .join(Listing, Transaction.listing_id == Listing.id)
         .join(Material, Listing.material_id == Material.id)
-        .filter(Listing.seller_id == recycler_id)
-        .filter(Listing.status == ListingStatus.COMPLETED)
-        .group_by(Material.type)
+        .filter(Transaction.recycler_id == recycler_id)
         .all()
     )
 
     inventory = []
     for row in results:
         inventory.append({
+            "transaction_id": row.transaction_id,
             "material_type": row.material_type,
-            "total_quantity": float(row.total_quantity or 0),
-            "listing_count": row.listing_count,
+            "quantity": float(row.final_quantity or 0),
         })
 
     return inventory
@@ -182,41 +184,12 @@ def update_listing_status(
         return None
 
     db_listing.status = status
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_listing)
     return db_listing
 
-def create_offer(db: Session, listing_id: int, offer: OfferCreate) -> Offer:
-    from app.models.offer import OfferStatus
-    db_offer = Offer(
-        listing_id=listing_id,
-        recycler_id=offer.recycler_id,
-        offered_price=offer.offered_price,
-        quantity=0,
-        status=OfferStatus.PENDING,
-    )
-    db.add(db_offer)
-    db.commit()
-    db.refresh(db_offer)
-    return db_offer
 
-
-def get_offers_for_listing(db: Session, listing_id: int) -> List[Offer]:
-    return db.query(Offer).filter(Offer.listing_id == listing_id).all()
-
-
-def accept_offer_by_id(db: Session, offer_id: int) -> Optional[Offer]:
-    from app.models.offer import OfferStatus
-    db_offer = db.query(Offer).filter(Offer.id == offer_id).first()
-    if not db_offer or db_offer.status != OfferStatus.PENDING:
-        return None
-
-    db_offer.status = OfferStatus.ACCEPTED
-
-    listing = get_listing(db, db_offer.listing_id)
-    if listing:
-        listing.status = ListingStatus.MATCHED
-
-    db.commit()
-    db.refresh(db_offer)
-    return db_offer

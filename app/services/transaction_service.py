@@ -27,7 +27,7 @@ VALID_TRANSITIONS = {
 }
 
 
-def get_all_transactions(db: Session, seller_id: int = None, recycler_id: int = None):
+def get_all_transactions(db: Session, seller_id: str = None, recycler_id: str = None):
     query = db.query(Transaction)
     if seller_id:
         query = query.filter(Transaction.seller_id == seller_id)
@@ -41,8 +41,8 @@ def get_transaction_by_id(db: Session, transaction_id: int):
 
 
 def create_transaction(
-    db: Session, offer_id: int, listing_id: int, seller_id: int,
-    recycler_id: int, agreed_price: float, final_quantity: float, final_price: float
+    db: Session, offer_id: int, listing_id: int, seller_id: str,
+    recycler_id: str, agreed_price: float, final_quantity: float, final_price: float
 ):
     offer = db.query(Offer).filter(Offer.id == offer_id).first()
     if not offer:
@@ -62,7 +62,11 @@ def create_transaction(
         final_price=final_price,
     )
     db.add(transaction)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(transaction)
     return transaction
 
@@ -94,6 +98,10 @@ def update_transaction_status(
     if status == TransactionStatus.COMPLETED:
         transaction.completed_at = datetime.now(timezone.utc)
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(transaction)
     return transaction

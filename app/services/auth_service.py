@@ -20,7 +20,11 @@ def register_user(db: Session, data: RegisterRequest) -> User:
         verified=True,
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
     return user
 
