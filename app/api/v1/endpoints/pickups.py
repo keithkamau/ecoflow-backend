@@ -90,6 +90,21 @@ def assign_driver(pickup_id: int, data: PickupAssignDriver, db: Session = Depend
     return _enrich(updated, db)
 
 
+@router.post("/{pickup_id}/self-complete", response_model=PickupResponse)
+def self_complete(
+    pickup_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    updated = pickup_service.self_complete_pickup(db, pickup_id)
+    if not updated:
+        pickup = pickup_service.get_pickup(db, pickup_id)
+        if not pickup:
+            raise HTTPException(status_code=404, detail="Pickup not found")
+        raise HTTPException(status_code=400, detail="Pickup is already completed or cancelled")
+    return _enrich(updated, db)
+
+
 @router.post("/{pickup_id}/proof", response_model=PickupResponse)
 async def upload_proof(
     pickup_id: int,
