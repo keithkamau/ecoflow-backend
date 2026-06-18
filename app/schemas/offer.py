@@ -5,10 +5,11 @@ from app.models.offer import OfferStatus
 
 
 class OfferCreate(BaseModel):
-    listing_id: int
+    listing_id: Optional[int] = None
     offered_price: float
     quantity: float
     note: Optional[str] = None
+    material_id: Optional[int] = None
 
     @field_validator("offered_price", "quantity")
     def must_be_positive(cls, v):
@@ -36,12 +37,13 @@ class CounterOfferCreate(BaseModel):
 
 class OfferResponse(BaseModel):
     id: int
-    listing_id: int
-    recycler_id: int
+    listing_id: Optional[int] = None
+    recycler_id: str
     offered_price: float
     quantity: float
     status: OfferStatus
-    note: Optional[str]
+    note: Optional[str] = None
+    material_id: Optional[int] = None
     counter_price: Optional[float]
     counter_quantity: Optional[float]
     counter_note: Optional[str]

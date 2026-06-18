@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
+from app.middleware.auth_middleware import get_current_user
+from app.models.user import User
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionResponse
 from app.services.transaction_service import (
     get_all_transactions,
@@ -16,7 +18,7 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
 @router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
-def create_transaction_endpoint(transaction: TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction_endpoint(transaction: TransactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = create_transaction(
         db,
         offer_id=transaction.offer_id,
@@ -35,12 +37,12 @@ def create_transaction_endpoint(transaction: TransactionCreate, db: Session = De
 
 
 @router.get("/", response_model=List[TransactionResponse])
-def list_transactions(seller_id: int = None, recycler_id: int = None, db: Session = Depends(get_db)):
+def list_transactions(seller_id: int = None, recycler_id: int = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return get_all_transactions(db, seller_id, recycler_id)
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
-def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
+def get_transaction(transaction_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     transaction = get_transaction_by_id(db, transaction_id)
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -48,7 +50,7 @@ def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{transaction_id}", response_model=TransactionResponse)
-def update_transaction(transaction_id: int, update: TransactionUpdate, db: Session = Depends(get_db)):
+def update_transaction(transaction_id: int, update: TransactionUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     transaction = update_transaction_status(
         db, transaction_id, update.status,
         pickup_notes=update.pickup_notes,

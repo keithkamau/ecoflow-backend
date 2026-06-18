@@ -1,6 +1,3 @@
-import os
-import uuid
-
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,7 +5,9 @@ from fastapi import UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.middleware.auth_middleware import get_current_user, require_role
 from app.models.listing import ListingStatus
+from app.models.user import User
 from app.schemas.listing_schemas import (
     ListingCreate,
     ListingUpdate,
@@ -20,6 +19,7 @@ from app.schemas.listing_schemas import (
     InventoryResponse,
 )
 from app.services import listing_service as service
+from app.services.storage_service import storage_service
 
 router = APIRouter()
 
@@ -27,7 +27,7 @@ router = APIRouter()
 #  Materials 
 
 @router.post("/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
-def create_material(material: MaterialCreate, db: Session = Depends(get_db)):
+def create_material(material: MaterialCreate, db: Session = Depends(get_db), current_user: User = Depends(require_role("admin"))):
     existing = service.get_material_by_type(db, material.type)
     if existing:
         raise HTTPException(status_code=400, detail="Material type already exists")
@@ -42,20 +42,30 @@ def get_materials(db: Session = Depends(get_db)):
 # Listings 
 
 @router.post("/", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
-def create_listing(listing: ListingCreate, db: Session = Depends(get_db)):
-    seller_id = 1
-    return service.create_listing(db, listing, seller_id)
+def create_listing(
+    listing: ListingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.create_listing(db, listing, str(current_user.id))
+
+
+@router.get("/mine", response_model=ListingSearchResponse)
+def get_my_listings(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    listings, total = service.get_user_listings(db, str(current_user.id), skip, limit)
+    return {"total": total, "listings": listings}
 
 
 @router.get("/", response_model=ListingSearchResponse)
 def get_listings(
     material_type: Optional[str] = Query(None),
-    min_quantity: Optional[float] = Query(None),
-    max_quantity: Optional[float] = Query(None),
+    quantity: Optional[float] = Query(None, gt=0),
     status: Optional[str] = Query(None),
-    lat: Optional[float] = Query(None),
-    lng: Optional[float] = Query(None),
-    radius_km: Optional[float] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
@@ -64,12 +74,8 @@ def get_listings(
 ):
     filters = ListingSearchFilters(
         material_type=material_type,
-        min_quantity=min_quantity,
-        max_quantity=max_quantity,
+        quantity=quantity,
         status=status,
-        lat=lat,
-        lng=lng,
-        radius_km=radius_km,
         date_from=date_from,
         date_to=date_to,
     )
@@ -80,12 +86,8 @@ def get_listings(
 @router.get("/search", response_model=ListingSearchResponse)
 def search_listings(
     material_type: Optional[str] = Query(None),
-    min_quantity: Optional[float] = Query(None),
-    max_quantity: Optional[float] = Query(None),
+    quantity: Optional[float] = Query(None, gt=0),
     status: Optional[str] = Query(None),
-    lat: Optional[float] = Query(None),
-    lng: Optional[float] = Query(None),
-    radius_km: Optional[float] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
@@ -94,12 +96,8 @@ def search_listings(
 ):
     filters = ListingSearchFilters(
         material_type=material_type,
-        min_quantity=min_quantity,
-        max_quantity=max_quantity,
+        quantity=quantity,
         status=status,
-        lat=lat,
-        lng=lng,
-        radius_km=radius_km,
         date_from=date_from,
         date_to=date_to,
     )
@@ -116,7 +114,7 @@ def get_listing(listing_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{listing_id}", response_model=ListingResponse)
-def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depends(get_db)):
+def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     updated = service.update_listing(db, listing_id, listing)
     if not updated:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -124,19 +122,20 @@ def update_listing(listing_id: int, listing: ListingUpdate, db: Session = Depend
 
 
 @router.delete("/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_listing(listing_id: int, db: Session = Depends(get_db)):
+def delete_listing(listing_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     deleted = service.delete_listing(db, listing_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Listing not found")
     return None
 
 
-# Recycler Inventory 
+# Recycler Inventory
 
 @router.get("/recyclers/inventory", response_model=InventoryResponse)
 def get_recycler_inventory(
-    recycler_id: int = Query(..., description="Recycler user ID"),
+    recycler_id: str = Query(..., description="Recycler user ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     items = service.get_recycler_inventory(db, recycler_id)
     return {"recycler_id": recycler_id, "items": items}
@@ -146,22 +145,13 @@ def get_recycler_inventory(
 async def upload_listing_photo(
     listing_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    UPLOAD_DIR = "uploads"
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    
     listing = service.get_listing(db, listing_id)
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
-    
-    file_ext = os.path.splitext(file.filename)[1]
-    file_name = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, file_name)
-    
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-    
-    photo_url = f"http://localhost:8000/uploads/{file_name}"
+
+    photo_url = await storage_service.upload(file, folder="uploads")
     photo = service.add_listing_photo(db, listing_id, photo_url)
+    return photo

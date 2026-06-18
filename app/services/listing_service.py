@@ -76,6 +76,13 @@ def get_listing(db: Session, listing_id: int) -> Optional[Listing]:
     return db.query(Listing).filter(Listing.id == listing_id).first()
 
 
+def get_user_listings(db: Session, user_id: str, skip: int = 0, limit: int = 100) -> tuple[List[Listing], int]:
+    query = db.query(Listing).filter(Listing.seller_id == user_id)
+    total = query.count()
+    listings = query.offset(skip).limit(limit).all()
+    return listings, total
+
+
 def get_listings(
     db: Session,
     filters: Optional[ListingSearchFilters] = None,

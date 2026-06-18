@@ -7,8 +7,8 @@ from app.models.transaction import TransactionStatus
 class TransactionCreate(BaseModel):
     offer_id: int
     listing_id: int
-    seller_id: int
-    recycler_id: int
+    seller_id: str
+    recycler_id: str
     agreed_price: float
     final_quantity: float
     final_price: float
@@ -24,8 +24,8 @@ class TransactionResponse(BaseModel):
     id: int
     listing_id: int
     offer_id: int
-    seller_id: int
-    recycler_id: int
+    seller_id: str
+    recycler_id: str
     agreed_price: float
     final_quantity: float
     final_price: float

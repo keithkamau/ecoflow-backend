@@ -7,7 +7,7 @@ from typing import Optional
 
 # what we need to send a message
 class MessageCreate(BaseModel):
-    recipient_id: int
+    recipient_id: str
     offer_id: int
     message_text: str
 
@@ -21,8 +21,8 @@ class MessageCreate(BaseModel):
 # what we send back when returning messages
 class MessageResponse(BaseModel):
     id: int
-    sender_id: int
-    recipient_id: int
+    sender_id: str
+    recipient_id: str
     offer_id: int
     message_text: str
     is_read: bool

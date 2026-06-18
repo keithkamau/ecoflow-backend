@@ -1,15 +1,16 @@
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import enum
 
 from app.database import Base
 
 
-class PaymentMethod(enum.Enum):
+class PaymentMethod(str, enum.Enum):
     MPESA = "mpesa"
 
 
-class PaymentStatus(enum.Enum):
+class PaymentStatus(str, enum.Enum):
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
@@ -21,7 +22,7 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=False)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(String, nullable=False)
 
     amount = Column(Float, nullable=False)
     payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.MPESA)
@@ -38,3 +39,5 @@ class Payment(Base):
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     paid_at = Column(DateTime, nullable=True)
+
+    transaction = relationship("Transaction", foreign_keys=[transaction_id])

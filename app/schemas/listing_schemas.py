@@ -75,7 +75,7 @@ class ListingUpdate(BaseModel):
 
 class ListingResponse(ListingBase):
     id: int
-    seller_id: int
+    seller_id: str
     status: str
     created_at: datetime
     updated_at: datetime
@@ -89,12 +89,8 @@ class ListingResponse(ListingBase):
 
 class ListingSearchFilters(BaseModel):
     material_type: Optional[str] = None
-    min_quantity: Optional[float] = None
-    max_quantity: Optional[float] = None
+    quantity: Optional[float] = Field(default=None, gt=0)
     status: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    radius_km: Optional[float] = Field(default=None, gt=0)
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
 
@@ -107,26 +103,12 @@ class ListingSearchResponse(BaseModel):
 # Inventory Schemas 
 
 class InventoryItem(BaseModel):
+    transaction_id: int
     material_type: str
-    total_quantity: float
-    total_spent: Optional[float] = None
-    listing_count: int
+    quantity: float
 
 
 class InventoryResponse(BaseModel):
-    recycler_id: int
+    recycler_id: str
     items: List[InventoryItem]
-class OfferCreate(BaseModel):
-    recycler_id: int
-    offered_price: Optional[float] = None
 
-class OfferResponse(BaseModel):
-    id: int
-    listing_id: int
-    recycler_id: int
-    offered_price: Optional[float]
-    status: str
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True

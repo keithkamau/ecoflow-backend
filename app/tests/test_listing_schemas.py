@@ -54,10 +54,9 @@ def test_listing_update_validation():
 
 
 def test_listing_search_filters():
-    filters = ListingSearchFilters(material_type="plastic", min_quantity=10.0)
+    filters = ListingSearchFilters(material_type="plastic", quantity=10.0)
     assert filters.material_type == "plastic"
-    assert filters.min_quantity == 10.0
-    assert filters.max_quantity is None
+    assert filters.quantity == 10.0
 
 
 def test_listing_search_response():
@@ -67,12 +66,13 @@ def test_listing_search_response():
 
 
 def test_inventory_item():
-    item = InventoryItem(material_type="plastic", total_quantity=100.0, listing_count=2)
+    item = InventoryItem(transaction_id=1, material_type="plastic", quantity=100.0)
+    assert item.transaction_id == 1
     assert item.material_type == "plastic"
-    assert item.total_quantity == 100.0
+    assert item.quantity == 100.0
 
 
 def test_inventory_response():
-    response = InventoryResponse(recycler_id=1, items=[])
-    assert response.recycler_id == 1
+    response = InventoryResponse(recycler_id="1", items=[])
+    assert response.recycler_id == "1"
     assert response.items == []

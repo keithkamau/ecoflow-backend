@@ -42,7 +42,7 @@ class Listing(Base):
     __tablename__ = "listings"
 
     id = Column(Integer, primary_key=True, index=True)
-    seller_id = Column(Integer, index=True, nullable=False)
+    seller_id = Column(String, index=True, nullable=False)
     material_id = Column(Integer, ForeignKey("materials.id"), nullable=False)
     quantity = Column(Float, nullable=False)
     condition = Column(Text, nullable=True)

@@ -6,7 +6,7 @@ from app.models.payment import PaymentMethod, PaymentStatus
 
 class PaymentCreate(BaseModel):
     transaction_id: int
-    user_id: int
+    user_id: str
     amount: float
     payment_method: PaymentMethod = PaymentMethod.MPESA
     phone_number: Optional[str] = None
@@ -37,7 +37,7 @@ class PaymentCallback(BaseModel):
 class PaymentResponse(BaseModel):
     id: int
     transaction_id: int
-    user_id: int
+    user_id: str
     amount: float
     payment_method: PaymentMethod
     status: PaymentStatus

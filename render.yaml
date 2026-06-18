@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: ecoflow-api
+    env: docker
+    repo: https://github.com/your-org/waste-hub-api
+    dockerfilePath: Dockerfile
+    dockerCommand: ./entrypoint.sh
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: ecoflow-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://ecoflow-frontend.onrender.com
+      - key: ENVIRONMENT
+        value: production
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: MPESA_CALLBACK_URL
+        value: https://ecoflow-api.onrender.com/api/v1/payments/callback
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+    healthCheckPath: /health
+
+  - type: pserv
+    name: ecoflow-db
+    env: docker
+    repo: https://github.com/your-org/waste-hub-api
+    dockerfilePath: Dockerfile.db
+    disk:
+      name: pgdata
+      mountPath: /var/lib/postgresql/data
+
+  - type: web
+    name: ecoflow-frontend
+    env: static
+    repo: https://github.com/your-org/waste-hub-client
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ecoflow-api.onrender.com/api/v1

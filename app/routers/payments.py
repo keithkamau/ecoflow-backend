@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
+from app.middleware.auth_middleware import get_current_user
+from app.models.user import User
 from app.schemas.payment import PaymentCreate, PaymentResponse
 from app.services.payment_service import (
     initiate_payment,
@@ -18,7 +20,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 
 
 @router.post("/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
-def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
+def create_payment(payment: PaymentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = initiate_payment(
         db,
         transaction_id=payment.transaction_id,
@@ -59,7 +61,7 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/{payment_id}/confirm")
-def confirm_payment_manual(payment_id: int, mpesa_receipt: str, db: Session = Depends(get_db)):
+def confirm_payment_manual(payment_id: int, mpesa_receipt: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.services.payment_service import confirm_payment_by_id
     result = confirm_payment_by_id(db, payment_id, mpesa_receipt)
     if not result:
@@ -68,7 +70,7 @@ def confirm_payment_manual(payment_id: int, mpesa_receipt: str, db: Session = De
 
 
 @router.post("/{payment_id}/fail")
-def fail_payment_manual(payment_id: int, db: Session = Depends(get_db)):
+def fail_payment_manual(payment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payment = get_payment_by_id(db, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -81,12 +83,12 @@ def fail_payment_manual(payment_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[PaymentResponse])
-def list_payments(db: Session = Depends(get_db)):
+def list_payments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return get_all_payments(db)
 
 
 @router.get("/detail/{payment_id}", response_model=PaymentResponse)
-def get_payment_detail(payment_id: int, db: Session = Depends(get_db)):
+def get_payment_detail(payment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payment = get_payment_by_id(db, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -94,7 +96,7 @@ def get_payment_detail(payment_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{payment_id}/status")
-def check_payment_status(payment_id: int, db: Session = Depends(get_db)):
+def check_payment_status(payment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = query_payment_status(db, payment_id)
     if not result:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -102,7 +104,7 @@ def check_payment_status(payment_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{transaction_id}", response_model=PaymentResponse)
-def get_payment(transaction_id: int, db: Session = Depends(get_db)):
+def get_payment(transaction_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payment = get_payment_by_transaction(db, transaction_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")

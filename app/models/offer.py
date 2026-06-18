@@ -1,11 +1,12 @@
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum
+from sqlalchemy.orm import relationship
 from datetime import datetime, timedelta, timezone
 import enum
 
 from app.database import Base
 
 
-class OfferStatus(enum.Enum):
+class OfferStatus(str, enum.Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
@@ -17,8 +18,9 @@ class Offer(Base):
     __tablename__ = "offers"
 
     id = Column(Integer, primary_key=True, index=True)
-    listing_id = Column(Integer, nullable=False)
-    recycler_id = Column(Integer, nullable=False)
+    listing_id = Column(Integer, ForeignKey("listings.id"), nullable=True)
+    recycler_id = Column(String, nullable=False)
+    material_id = Column(Integer, ForeignKey("materials.id"), nullable=True)
 
     offered_price = Column(Float, nullable=False)
     quantity = Column(Float, nullable=False)
@@ -34,3 +36,6 @@ class Offer(Base):
     countered_at = Column(DateTime, nullable=True)
 
     note = Column(String, nullable=True)
+
+    listing = relationship("Listing", foreign_keys=[listing_id])
+    material = relationship("Material", foreign_keys=[material_id])

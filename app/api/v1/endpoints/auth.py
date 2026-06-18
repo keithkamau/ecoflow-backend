@@ -13,11 +13,12 @@ from app.services.auth_service import register_user, login_user, refresh_access_
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
     try:
         user = register_user(db, data)
-        return {"message": "Registration successful", "user_id": str(user.id)}
+        tokens = login_user(db, data.email, data.password)
+        return tokens
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
@@ -38,3 +39,8 @@ def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
         return tokens
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+
+@router.post("/logout")
+def logout():
+    return {"message": "Logged out successfully"}

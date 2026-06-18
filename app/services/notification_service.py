@@ -1,8 +1,32 @@
+import asyncio
+
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from app.models.notification import Notification
+
+
+def _broadcast(user_id: str, notification: Notification):
+    from app.routers.websocket import send_notification
+    payload = {
+        "type": "notification",
+        "id": notification.id,
+        "user_id": notification.user_id,
+        "title": notification.title,
+        "message": notification.message,
+        "type_name": notification.type,
+        "reference_type": notification.reference_type,
+        "reference_id": notification.reference_id,
+        "is_read": notification.is_read,
+        "created_at": notification.created_at.isoformat() if notification.created_at else None,
+        "read_at": None,
+    }
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(send_notification(user_id, payload))
+    except RuntimeError:
+        pass
 
 
 def create_notification(
@@ -29,6 +53,7 @@ def create_notification(
         db.rollback()
         raise
     db.refresh(notification)
+    _broadcast(user_id, notification)
     return notification
 
 
