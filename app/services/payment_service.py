@@ -5,6 +5,7 @@ from app.config import settings
 from app.models.payment import Payment, PaymentStatus, PaymentMethod
 from app.models.transaction import Transaction, TransactionStatus
 from app.utils.daraja import stk_push, query_status
+from app.services.notification_service import create_notification
 
 
 def get_payment_by_transaction(db: Session, transaction_id: int):
@@ -116,6 +117,24 @@ def complete_payment(db: Session, checkout_request_id: str, mpesa_receipt: str, 
         db.rollback()
         raise
     db.refresh(payment)
+
+    if transaction:
+        create_notification(
+            db, user_id=str(transaction.seller_id),
+            title="Payment Received",
+            message=f"Payment for transaction #{transaction.id} completed. Receipt: {mpesa_receipt or 'N/A'}",
+            type="payment",
+            reference_type="payment",
+            reference_id=payment.id,
+        )
+        create_notification(
+            db, user_id=str(transaction.recycler_id),
+            title="Payment Sent",
+            message=f"Your payment for transaction #{transaction.id} was successful",
+            type="payment",
+            reference_type="payment",
+            reference_id=payment.id,
+        )
     return payment
 
 
@@ -136,6 +155,16 @@ def confirm_payment_by_id(db: Session, payment_id: int, mpesa_receipt: str):
         db.rollback()
         raise
     db.refresh(payment)
+
+    if transaction:
+        create_notification(
+            db, user_id=str(transaction.recycler_id),
+            title="Payment Confirmed",
+            message=f"Payment for transaction #{transaction.id} confirmed. Receipt: {mpesa_receipt}",
+            type="payment",
+            reference_type="payment",
+            reference_id=payment.id,
+        )
     return payment
 
 
@@ -151,6 +180,15 @@ def fail_payment(db: Session, checkout_request_id: str, result_desc: str = None)
         db.rollback()
         raise
     db.refresh(payment)
+
+    create_notification(
+        db, user_id=str(payment.user_id),
+        title="Payment Failed",
+        message=f"Payment of KES {payment.amount} failed. {result_desc or ''}",
+        type="payment",
+        reference_type="payment",
+        reference_id=payment.id,
+    )
     return payment
 
 

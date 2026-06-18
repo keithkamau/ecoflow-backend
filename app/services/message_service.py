@@ -4,6 +4,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.models.message import Message
+from app.services.notification_service import create_notification
 
 
 def get_messages_by_offer(db: Session, offer_id: int):
@@ -30,6 +31,14 @@ def send_message(db: Session, sender_id: str, recipient_id: str, offer_id: int, 
         db.rollback()
         raise
     db.refresh(message)
+    create_notification(
+        db, user_id=recipient_id,
+        title="New Message",
+        message=f"You have a new message regarding offer #{offer_id}",
+        type="message",
+        reference_type="offer",
+        reference_id=offer_id,
+    )
     return message
 
 def mark_message_as_read(db: Session, message_id: int):

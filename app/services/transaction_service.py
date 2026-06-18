@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.models.transaction import Transaction, TransactionStatus
 from app.models.offer import Offer, OfferStatus
+from app.services.notification_service import create_notification
 
 
 VALID_TRANSITIONS = {
@@ -68,6 +69,23 @@ def create_transaction(
         db.rollback()
         raise
     db.refresh(transaction)
+
+    create_notification(
+        db, user_id=seller_id,
+        title="Transaction Created",
+        message=f"Transaction #{transaction.id} created for KES {final_price}",
+        type="transaction",
+        reference_type="transaction",
+        reference_id=transaction.id,
+    )
+    create_notification(
+        db, user_id=recycler_id,
+        title="Transaction Created",
+        message=f"Transaction #{transaction.id} created for KES {final_price}",
+        type="transaction",
+        reference_type="transaction",
+        reference_id=transaction.id,
+    )
     return transaction
 
 
@@ -104,4 +122,32 @@ def update_transaction_status(
         db.rollback()
         raise
     db.refresh(transaction)
+
+    if status == TransactionStatus.COMPLETED:
+        create_notification(
+            db, user_id=str(transaction.seller_id),
+            title="Transaction Completed",
+            message=f"Transaction #{transaction_id} has been completed",
+            type="transaction",
+            reference_type="transaction",
+            reference_id=transaction_id,
+        )
+        create_notification(
+            db, user_id=str(transaction.recycler_id),
+            title="Transaction Completed",
+            message=f"Transaction #{transaction_id} has been completed",
+            type="transaction",
+            reference_type="transaction",
+            reference_id=transaction_id,
+        )
+    if status == TransactionStatus.DISPUTED:
+        create_notification(
+            db, user_id=str(transaction.seller_id),
+            title="Transaction Disputed",
+            message=f"Transaction #{transaction_id} has been disputed",
+            type="dispute",
+            reference_type="transaction",
+            reference_id=transaction_id,
+        )
+
     return transaction

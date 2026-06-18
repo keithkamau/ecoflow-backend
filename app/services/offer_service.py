@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.models.offer import Offer, OfferStatus
+from app.models.listing import Listing
+from app.services.notification_service import create_notification
 
 
 def get_all_offers(db: Session, listing_id: int = None, recycler_id: str = None):
@@ -32,6 +34,18 @@ def create_offer(db: Session, listing_id: int = None, recycler_id: str = "", off
         db.rollback()
         raise
     db.refresh(offer)
+
+    if offer.listing_id:
+        listing = db.query(Listing).filter(Listing.id == offer.listing_id).first()
+        if listing:
+            create_notification(
+                db, user_id=str(listing.seller_id),
+                title="New Offer",
+                message=f"New offer #{offer.id} received for KES {offer.offered_price}/unit",
+                type="offer",
+                reference_type="offer",
+                reference_id=offer.id,
+            )
     return offer
 
 
@@ -50,6 +64,19 @@ def update_offer_status(db: Session, offer_id: int, status: OfferStatus, note: s
         db.rollback()
         raise
     db.refresh(offer)
+
+    if offer.listing_id:
+        listing = db.query(Listing).filter(Listing.id == offer.listing_id).first()
+        if listing:
+            action = status.value if hasattr(status, 'value') else status
+            create_notification(
+                db, user_id=str(listing.seller_id),
+                title=f"Offer {action.title()}",
+                message=f"Offer #{offer_id} from recycler {offer.recycler_id[:8]}... was {action}",
+                type="offer",
+                reference_type="offer",
+                reference_id=offer_id,
+            )
     return offer
 
 
@@ -70,6 +97,18 @@ def counter_offer(db: Session, offer_id: int, counter_price: float, counter_quan
         db.rollback()
         raise
     db.refresh(offer)
+
+    if offer.listing_id:
+        listing = db.query(Listing).filter(Listing.id == offer.listing_id).first()
+        if listing:
+            create_notification(
+                db, user_id=str(listing.seller_id),
+                title="Offer Countered",
+                message=f"Offer #{offer_id} was countered at KES {counter_price}/unit",
+                type="offer",
+                reference_type="offer",
+                reference_id=offer_id,
+            )
     return offer
 
 
