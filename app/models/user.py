@@ -10,7 +10,7 @@ from app.database import Base, GUID
 class User(Base):
     __tablename__ = "users"
 
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
     phone      = Column(String, unique=True, nullable=False, index=True)
     email      = Column(String, unique=True, nullable=True)
     name       = Column(String, nullable=False)
@@ -27,7 +27,7 @@ class User(Base):
 class OTPLog(Base):
     __tablename__ = "otp_logs"
 
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
     phone      = Column(String, nullable=False, index=True)
     otp        = Column(String, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
@@ -38,7 +38,7 @@ class OTPLog(Base):
 class KYCDocument(Base):
     __tablename__ = "kyc_documents"
 
-    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id          = Column(GUID(), primary_key=True, default=uuid.uuid4)
     user_id     = Column(GUID(), ForeignKey("users.id"), nullable=False)
     doc_type    = Column(String, nullable=False)
     doc_url     = Column(String, nullable=False)
