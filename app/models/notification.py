@@ -1,14 +1,14 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from datetime import datetime, timezone
 
-from app.database import Base
+from app.database import Base, GUID
 
 
 class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     message = Column(String, nullable=False)
     type = Column(String, nullable=False, default="info")

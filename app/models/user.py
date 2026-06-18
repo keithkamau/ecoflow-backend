@@ -2,10 +2,9 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.database import Base
+from app.database import Base, GUID
 
 
 class User(Base):
@@ -40,7 +39,7 @@ class KYCDocument(Base):
     __tablename__ = "kyc_documents"
 
     id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id     = Column(GUID(), ForeignKey("users.id"), nullable=False)
     doc_type    = Column(String, nullable=False)
     doc_url     = Column(String, nullable=False)
     status      = Column(Enum("pending", "verified", "rejected", name="doc_status"), default="pending")
