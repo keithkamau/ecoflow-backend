@@ -18,6 +18,7 @@ app = FastAPI(
     title="EcoFlow API",
     version="1.0.0",
     description="Waste management and recycling marketplace API",
+    redirect_slashes=False,
 )
 
 
