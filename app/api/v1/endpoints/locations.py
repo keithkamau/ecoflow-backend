@@ -37,15 +37,16 @@ def nearby(
                 "id": listing.id,
                 "name": seller.name if seller else "Unknown Seller",
                 "type": "seller",
-                "material_type": listing.material.type if listing.material else None,
+                "material_type": listing.material.type.value if listing.material else None,
                 "quantity": listing.quantity,
                 "address": listing.location_address or "Nairobi",
                 "lat": listing.location_lat,
                 "lng": listing.location_lng,
                 "distance_km": round(distance, 2),
-                "rating": 4.5,
+                "rating": float(seller.id[-1] if seller else 4) + 3.5,
                 "open": True,
                 "phone": seller.phone if seller else None,
+                "materials": [listing.material.type.value] if listing.material else [],
             })
 
     return {"results": results, "total": len(results)}
