@@ -60,7 +60,7 @@ def create_listing(db: Session, listing: ListingCreate, seller_id: str) -> Listi
         price_expectation=listing.price_expectation,
         preferred_pickup_start=listing.preferred_pickup_start,
         preferred_pickup_end=listing.preferred_pickup_end,
-        status=ListingStatus.ACTIVE,
+        status=ListingStatus.WAITING,
     )
     db.add(db_listing)
     try:
@@ -100,7 +100,7 @@ def get_listings(
         if filters.quantity is not None:
             query = query.filter(Listing.quantity >= filters.quantity)
         if filters.status:
-            query = query.filter(Listing.status == filters.status)
+            query = query.filter(Listing.status == filters.status.upper())
         if filters.date_from:
             query = query.filter(Listing.created_at >= filters.date_from)
         if filters.date_to:

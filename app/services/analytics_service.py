@@ -15,7 +15,7 @@ def get_seller_stats(db: Session, user_id: str) -> dict:
     tx_count = completed.count()
     active = db.query(Listing).filter(
         Listing.seller_id == user_id,
-        Listing.status == ListingStatus.ACTIVE
+        Listing.status == ListingStatus.WAITING
     ).count()
 
     return {
