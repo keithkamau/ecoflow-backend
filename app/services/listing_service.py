@@ -159,7 +159,7 @@ def add_listing_photo(db: Session, listing_id: int, photo_url: str) -> ListingPh
 
 
 def get_recycler_inventory(db: Session, recycler_id: str) -> List[dict]:
-    from app.models.transaction import Transaction
+    from app.models.transaction import Transaction, TransactionStatus
     results = (
         db.query(
             Transaction.id.label("transaction_id"),
@@ -169,6 +169,7 @@ def get_recycler_inventory(db: Session, recycler_id: str) -> List[dict]:
         .join(Listing, Transaction.listing_id == Listing.id)
         .join(Material, Listing.material_id == Material.id)
         .filter(Transaction.recycler_id == recycler_id)
+        .filter(Transaction.status.in_([TransactionStatus.PICKUP_COMPLETED, TransactionStatus.COMPLETED]))
         .all()
     )
 

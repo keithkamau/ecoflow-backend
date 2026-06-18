@@ -60,7 +60,7 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
     return {"ResultCode": 0, "ResultDesc": "Success"}
 
 
-@router.post("/{payment_id}/confirm")
+@router.post("/{payment_id}/confirm", response_model=PaymentResponse)
 def confirm_payment_manual(payment_id: int, mpesa_receipt: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.services.payment_service import confirm_payment_by_id
     result = confirm_payment_by_id(db, payment_id, mpesa_receipt)

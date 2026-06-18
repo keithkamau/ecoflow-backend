@@ -21,6 +21,7 @@ notification_clients: Dict[str, List[WebSocket]] = defaultdict(list)
 
 @router.websocket("/ws/chat/{offer_id}")
 async def chat_websocket(ws: WebSocket, offer_id: int):
+    await ws.accept()
     token = ws.query_params.get("token")
     if not token:
         await ws.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -40,7 +41,8 @@ async def chat_websocket(ws: WebSocket, offer_id: int):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await chat_manager.connect_to_room(offer_id, ws)
+    chat_manager.rooms[offer_id].append(ws)
+    logger.info(f"WebSocket connected to room {offer_id} (total: {len(chat_manager.rooms[offer_id])})")
 
     try:
         while True:

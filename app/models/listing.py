@@ -19,10 +19,10 @@ class MaterialType(str, enum.Enum):
 
 
 class ListingStatus(str, enum.Enum):
-    ACTIVE = "active"
-    MATCHED = "matched"
-    COMPLETED = "completed"
-    EXPIRED = "expired"
+    WAITING = "waiting"
+    OFFER_ACCEPTED = "offer_accepted"
+    AWAITING_PICKUP = "awaiting_pickup"
+    PICKUP_COMPLETE = "pickup_complete"
 
 
 class Material(Base):
@@ -52,7 +52,7 @@ class Listing(Base):
     price_expectation = Column(Float, nullable=True)
     preferred_pickup_start = Column(DateTime, nullable=True)
     preferred_pickup_end = Column(DateTime, nullable=True)
-    status = Column(Enum(ListingStatus), default=ListingStatus.ACTIVE)
+    status = Column(Enum(ListingStatus), default=ListingStatus.WAITING)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
