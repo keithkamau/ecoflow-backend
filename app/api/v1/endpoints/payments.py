@@ -1,18 +1,9 @@
-from fastapi import APIRouter
-
+from fastapi import APIRouter, Depends
+from app.middleware.auth_middleware import get_current_user
 router = APIRouter(prefix="/payments", tags=["payments"])
-
-
 @router.get("/")
-def list_payments():
-    return {"items": [], "total": 0}
-
-
+def list_payments(u=Depends(get_current_user)): return []
 @router.get("/{item_id}")
-def get_payments(item_id: str):
-    return {"item": None}
-
-
+def get_payment(item_id:str,u=Depends(get_current_user)): return {}
 @router.post("/")
-def create_payments():
-    return {"message": "payments created", "id": "placeholder"}
+def create_payment(u=Depends(get_current_user)): return {"id":"placeholder"}
