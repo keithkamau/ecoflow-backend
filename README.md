@@ -1,6 +1,6 @@
 # Waste Management & Recycling Hub — Backend API
 
-Back-end link: https://ecoflow-api-dab3.onrender.com
+Back-end link: https://ecoflow-backend.onrender.com
 
 FastAPI backend connecting waste sellers with recyclers across Kenya. Part of the EcoFlow platform.
 
